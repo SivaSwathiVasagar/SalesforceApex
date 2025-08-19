@@ -1,5 +1,6 @@
 public class BankWithdrawDay12 extends BankCalculationDay12 implements IWithdrawDay12{
-    public BankWithdrawDay12(String accountHolderName, Integer contactNum){
+    public BankWithdrawDay12(String accountHolderName, Integer contactNum)
+   {
         super(accountHolderName, contactNum);
     }
     public void withdraw(integer withdrawAmount){
