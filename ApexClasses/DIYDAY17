@@ -1,0 +1,85 @@
+/**
+ * Author: 	svasagar
+ * Date  : 	08/13/2025
+ * Purpose: created this cls for learning map, inputing list as value for map, and accessing product cls without inheritance.
+ */
+
+public class SuperMarketDay17 {
+    // Declare a MAP with value as list of Product class obj
+    private Map<Integer, ProductBillingDay7> productsMap = new Map<Integer, ProductBillingDay7>();
+    ProductBillingDay7 singleProduct;
+    
+    // Add a product
+    public void addProduct(List<ProductBillingDay7> productList) {
+        for(ProductBillingDay7 product : productList){
+            productsMap.put(product.productCode, product);
+        }
+        System.debug(productsMap);  
+    }
+    
+    // Display all stock details
+    public void displayStock() {
+        System.debug('------ Stock Details ------');
+        for (ProductBillingDay7 p : productsMap.values()) {
+            System.debug('Code: ' + p.productCode +
+                         ', Name: ' + p.productName +
+                         ', Price: Rs. ' + p.price +
+                         ', Stock: ' + p.stockQuantity +
+                         ', Discount: ' + p.discountPercent + '%');
+        }
+    }
+    
+    // Call billing for a specific product
+    public void billingMap(Integer code, Integer quantity) {
+        if (productsMap.containsKey(code)) {
+            singleProduct = productsMap.get(code);
+            singleProduct.billing(quantity); // Uses ProductBillingDay7's own billing method
+        } else {
+            System.debug('Product not found for billing');
+        }
+    }
+    // Call reorder Products for a specific product
+    public void reorderProductsByCode(Integer code) {
+        if (productsMap.containsKey(code)) {
+            singleProduct = productsMap.get(code);
+            singleProduct.reorderProducts(); // Uses ProductBillingDay7's own reorder logic
+        }
+        else
+        {
+            System.debug('Reorder by Code :: Product Not Found');
+        }
+    }
+    
+    // Search product by code 
+    public void searchProduct(Integer code) {
+        if (productsMap.containsKey(code)) {
+            productsMap.get(code).searchByCode(code); // Uses ProductBillingDay7's own search logic
+        } else{
+            System.debug('Search By Code :: Product Not Found');
+        } 
+    }
+    
+    public void reorderProductsByCode1(){
+        for (ProductBillingDay7 p : productsMap.values()){
+                p.reorderProducts();        
+        }
+        
+    } 
+}
+
+/*
+// Create a List of products
+List<ProductBillingDay7> productList = new List<ProductBillingDay7>{
+new ProductBillingDay7(11, 'Wool', 1000, 25, 20),
+new ProductBillingDay7(12, 'Cotton', 800, 10, 50),
+new ProductBillingDay7(13, 'Silk', 1500, 15, 5)
+};
+
+// Create SuperMarket object
+SuperMarketDay17 market = new SuperMarketDay17();
+market.addProduct(productList);
+market.displayStock();
+market.billingMap(11,3);
+market.reorderProductsByCode(11);
+market.searchProduct(11);
+*/
