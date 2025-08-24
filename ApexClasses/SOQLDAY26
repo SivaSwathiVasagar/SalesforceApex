@@ -1,0 +1,128 @@
+public class SOQLDay26 {
+    
+    // Get Opportunities above a given amount
+    public void getAmount(Integer amount){
+        List<Opportunity> oppList = [SELECT Name, Amount 
+                                     FROM Opportunity 
+                                     WHERE Amount >: amount
+                                     ORDER BY Amount ASC]; 
+        
+        System.debug('----------- Opp By Amount --------');
+        
+        if(!oppList.isEmpty()){
+            System.debug(oppList);
+        } else {
+            System.debug('No Opportunities found with Amount > ' + amount);
+        }
+    }
+    
+    // Count Opportunities by Stage
+    public void countOppByStage(String userStageName){
+        List<Opportunity> oppList = [SELECT Name, Amount,StageName 
+                                     FROM Opportunity 
+                                     WHERE Amount != null and 
+                                     StageName = :userStageName];
+        
+        Integer count = oppList.size();
+        
+        System.debug('--------- Count Opp By Stage --------');
+        
+        if(count > 0){
+            System.debug('Count of Opp by Stage "' + userStageName + '" :: ' + count);
+        } else {
+            System.debug('No Opportunities found for Stage: ' + userStageName);
+        }
+    }
+    
+    //  Get Opportunities by Source and Stage
+    Public void getSourceAndStage(String userSourceName ,String userStageName){
+        List<Opportunity> oppList = [SELECT Name, StageName, LeadSource
+                                     FROM Opportunity 
+                                     WHERE StageName = :userStageName and
+                                     LeadSource = :userSourceName];
+        
+        System.debug('--------- Opp By Source & Stage --------');
+        
+        if(!oppList.isEmpty()){
+            System.debug(oppList);
+        }
+        else {
+            System.debug('No Opportunities found for Stage "' + userStageName + 
+                         '" and Source "' + userSourceName + '"');
+        }
+    }
+    
+    //  Get Opportunities by Name match
+    Public void getOppbyName(String text){
+        List<Opportunity> oppList = [SELECT Name 
+                                     FROM Opportunity 
+                                     WHERE Name LIKE :text]; // LIKE is CASE IN-SENSITIVE 
+        
+        System.debug('--------- Opp By Name --------');
+        
+        if(!oppList.isEmpty()){
+            System.debug(oppList);
+        }
+        else{
+            System.debug('No Opportunities found containing name: ' + text);
+        }
+    }
+    
+    // Get Total Amount of Opportunities by Stage
+    Public void getTotalAmountByStage(String userStageName){
+        List<Opportunity> oppList = [SELECT Name, Amount, StageName 
+                                     FROM Opportunity 
+                                     WHERE Amount != null and 
+                                     StageName = :userStageName];
+        Decimal total = 0;
+        
+        if(!oppList.isEmpty()){
+            for(Opportunity opp: oppList) {
+                total += opp.Amount;
+            }
+            System.debug('--------- Total Amount By Stage --------');
+            
+            if(total > 0){
+                System.debug('Total Amount for Stage "' + userStageName + '" :: ' + total);
+            } else {
+                System.debug('No Opportunities found for Stage: ' + userStageName);
+            }
+        }
+    }
+    
+    // Display all AccountsID and their Opportunities
+    Public void getAccountAndOpp(){
+        List<Opportunity> oppList = [SELECT Id, Name, StageName, AccountId
+                                     FROM Opportunity 
+                                     WHERE AccountId != null and
+                                     StageName IN ('Closed Lost', 'Closed Won')
+                                     LIMIT 3];
+                                     
+        Map <ID, List<Opportunity>> accOppMap  = new Map <ID, List<Opportunity>>();
+        
+        for(Opportunity opp : oppList){
+            if(!accOppMap.containsKey(opp.AccountId)) 
+            {
+                accOppMap.put(opp.AccountId, new List<Opportunity>());
+            }
+            accOppMap.get(opp.AccountId).add(opp);   
+        }
+        
+        System.debug('--------- Account & Opportunities ---------');
+        for(ID accountID: accOppMap.keySet()){
+            System.debug(' Account ID :: ' + accountID);
+            System.debug(' Opportunity :: ' + accOppMap.get(accountID));
+        }
+    }
+}
+
+
+/*
+SOQLDay26 obj = new SOQLDay26();
+obj.getAmount(255000);
+obj.countOppByStage('Prospecting');
+obj.getSourceAndStage('Partner','Closed Won');
+obj.getOppbyName('Z%');
+obj.getOppbyName('%info%');
+obj.getAccountAndOpp();
+*/
