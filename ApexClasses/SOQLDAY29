@@ -1,0 +1,61 @@
+public class SoqlDay29 {
+    
+    //Get account counts grouped by Rating
+    public static void getAccountCountsByRating() {
+        
+        List<AggregateResult> accountResults = [SELECT COUNT(Id) accountCount, Rating
+                                                FROM Account
+                                                GROUP BY Rating 
+                                               ];
+        
+        // Map -> Key => Rating, Value => Count(s)
+        Map<String, List<Integer>> ratingToCountsMap = new Map<String, List<Integer>>();
+        
+        for (AggregateResult accountResult : accountResults) {
+            String rating = (String) accountResult.get('Rating');
+            Integer count = (Integer) accountResult.get('accountCount');
+            
+            if (!ratingToCountsMap.containsKey(rating)) {
+                ratingToCountsMap.put(rating, new List<Integer>());
+            }
+            ratingToCountsMap.get(rating).add(count);
+        }
+        
+        System.debug('Account Counts by Rating: ' + ratingToCountsMap);
+    }
+    
+    
+    // Method: Get Opportunities with duplicate names starting with 'A'
+    public static void getDuplicateOpportunities() {
+        // Find duplicate opportunity names starting with A
+        List<AggregateResult> duplicateNameResults = [SELECT Name, COUNT(Id) oppCount
+                                                      FROM Opportunity
+                                                      WHERE Name LIKE 'A%'
+                                                      GROUP BY Name
+                                                      HAVING COUNT(Id) > 1
+                                                     ];
+        
+        // SET to store duplicate names
+        Set<String> duplicateNames = new Set<String>();
+        for (AggregateResult duplicateName : duplicateNameResults) {
+            duplicateNames.add((String) duplicateName.get('Name'));
+        }
+        
+        // Fetch Opportunities with those names
+        List<Opportunity> duplicateOpportunities = new List<Opportunity>();
+        if (!duplicateNames.isEmpty()) {
+            duplicateOpportunities = [SELECT Id, Name, Amount, StageName
+                                      FROM Opportunity
+                                      WHERE Name IN :duplicateNames
+                                     ];               
+        }
+        
+        for (Opportunity opp : duplicateOpportunities) {
+            System.debug('Duplicate Opportunity: ' + opp);
+        }
+    }
+}
+
+
+//SOQLDAY29.runQuery();
+//SOQLDAY29.getDuplicateOpportunities();
