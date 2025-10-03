@@ -1,0 +1,44 @@
+/* Author 	- svasagar
+ * Date 	  - 09/30/2025
+ * Purpose 	- Update OpportunityLineItem Quantity, When Opportunity.Quantity__c changes
+ */
+
+trigger OppTrigger on Opportunity (After update) { 
+    Switch on Trigger.OperationType{
+        When After_Update{
+            List<OpportunityLineItem> oppLineItem = [Select Quantity, Opportunity.Quantity__c 
+                                                     From OpportunityLineItem Where OpportunityId = :Trigger.New];
+            if(!oppLineItem.isEmpty()){
+                for(OpportunityLineItem oppLineRecord: oppLineItem){
+                    if(oppLineRecord.Quantity != Trigger.NewMap.get(oppLineRecord.OpportunityId).Quantity__c){
+                        oppLineRecord.Quantity = Trigger.NewMap.get(oppLineRecord.OpportunityId).Quantity__c;
+                    }
+                    
+                }
+            } update oppLineItem;
+        }
+    }
+}
+
+
+/* trigger OppTrigger on Opportunity (After update) {
+    Switch on Trigger.OperationType{
+        When After_Update{
+            // Get Parent & Child Record / Create a Child List
+            List<Opportunity> oppList = [Select Id, Quantity__c, (Select Id, Quantity from OpportunityLineItems) 
+                                         From Opportunity Where Id = :Trigger.New];
+            List<OpportunityLineItem> oppLineList = new List<OpportunityLineItem>();
+            if(!oppList.isEmpty()){
+                for(Opportunity opp : oppList){
+                    for(OpportunityLineItem oppLineRecord : opp.OpportunityLineItems){
+                        if(opp.Quantity__c != oppLineRecord.Quantity){
+                            oppLineRecord.Quantity = opp.Quantity__c;
+                            oppLineList.add(oppLineRecord);
+                        }
+                    }
+                } update oppLineList;
+            }
+            
+        }
+    } 
+} */
