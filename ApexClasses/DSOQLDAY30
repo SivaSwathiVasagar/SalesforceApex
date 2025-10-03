@@ -1,0 +1,34 @@
+public class SoqlDay30 {
+    public static void getFieldObjectName(String objName, List<String> fieldName, Integer limitNum){
+        String fields = String.join(fieldName, ',');
+        String query = 'SELECT '+ fields + ' FROM '+ objName + 'LIMIT '+ limitNum ;
+        System.debug(Database.query(query));
+    }
+    public static void getRecordWithUserInput(String objName,List<String> fieldName, String searchField,
+                                              String operator, Object value, Integer limitNum )  
+  {
+        String fields = String.join(fieldName, ',');
+        String query = 'SELECT ' + fields +
+                       ' FROM ' + objName +
+                       ' WHERE ' + searchField + operator +
+            		   ' :value' + ' LIMIT ' + limitNum ;
+        
+        // System.debug('Final Query String: ' + query);
+        
+        List<SObject> results = Database.query(query);
+        
+        System.debug('Query Results: ' + results);
+    }
+    
+    /* public static void getRecordWithUserInput(String objName,List<String> fieldName, String searchField, String operator, Object value){
+String fields = String.join(fieldName, ',');
+//String query = 'SELECT '+ fields + ' FROM ' + objName + ' WHERE ' + searchField + operator +  ':Value';
+String query = 'SELECT ' + fields +  ' FROM ' + objName + ' WHERE ' + searchField + operator + ' :value';
+
+
+//System.debug(query);
+List<SObject> results = Database.query(query);
+System.debug('Query Results: ' + results); 
+} */
+    
+}
