@@ -1,0 +1,189 @@
+public class PractiseDML {
+    public static String createAccount(String accName, String accRating){
+        String output = ' Unable to create record, missing values';
+        if(!String.isBlank(accName)) {
+            Account a = new Account();
+            a.Name = accName;
+            a.Rating = accRating;
+            insert a;
+            output = a.Id;  
+            return output;
+            
+        }
+        return output;
+    }
+    
+    public static void insertAcc(){
+        List<Account> acc = [Select Id, Name, AnnualRevenue From Account Where Industry = 'Technology' and AnnualRevenue > 100];
+        system.debug(acc);
+        for(Account a: acc){
+            a.AnnualRevenue += a.AnnualRevenue * 0.15;
+        }
+        Update acc;
+        system.debug(acc);
+        
+    }
+    public static void upsertAccount(){
+        List<Account> acc = [Select Id, Name, AnnualRevenue From Account Where Industry = 'Technology'];
+        system.debug(acc);
+        for(Account a: acc){
+            a.AnnualRevenue += a.AnnualRevenue * 0.15;
+        }
+        Account a = new Account();
+        a.Name = 'Adyaaas';
+        a.Account_Priority__c = 'Low';
+        a.AnnualRevenue = 1000234;
+        acc.add(a);
+        
+        Upsert acc;
+        System.debug(acc);
+    }
+    public static void deleteAccount(){
+        List<Account> acc = [Select Id, Name From Account Where Name = 'Adyaaas'];
+        delete acc;
+        System.debug('Deleted');
+    }
+    public static void undeleteAccount(){
+        List<Account> acc = [Select Id, Name, AnnualRevenue From Account Where Name = 'Adyaaas' All Rows];
+        undelete acc;
+        System.debug('unDeleted');
+    }
+    // account, opp name , 2 opp under 
+    // 
+    public static void createAccountOpp(){
+        List<Account> acc = [Select Id, Name From Account Where Name = 'Adya & Co'];
+        List<Opportunity> Opp =  new List<Opportunity>();
+        
+        for(Account accRecord: acc){
+            Opportunity newOpp1 = new Opportunity();
+            newOpp1.Name = 'Dummy';
+            newOpp1.CloseDate = Date.today().addDays(30);
+            newOpp1.StageName = 'Prospecting';
+            newOpp1.AccountId = accRecord.Id;
+            Opp.add(newOpp1);
+            Opportunity newOpp2 = new Opportunity(); 
+            newOpp2.Name = 'Dummy1';
+            newOpp2.CloseDate = Date.today().addDays(30);
+            newOpp2.StageName = 'Prospecting';
+            newOpp1.AccountId = accRecord.Id;
+            Opp.add(newOpp2);
+        }
+        
+        Insert Opp;
+        System.debug(acc);
+    }
+    Public static void chatgptDmlQuestion(){
+        /* Account newAcc = New Account(
+Name = 'TestAcc');
+Insert newAcc;
+Account res = [Select Id, Name From Account Where Name = 'TestAcc'];
+res.Industry = 'Technology';
+Update res;
+system.debug(res);
+*/
+        List<Account> res = [Select Id, Name From Account Where Name = 'TestAcc'];
+        res[0].Name = 'TestAcc1';
+        Account res2 = New Account(Name = 'Swathyyy123');
+        
+        res.add(res2);
+        Database.UpsertResult[] results = Database.Upsert(res, false);
+        system.debug(results);
+        for (Database.UpsertResult sr : results) 
+        {
+            System.debug('Upsert: ' + sr.getId());
+            if(!sr.isSuccess()){
+                for (Database.Error err : sr.getErrors()) {
+                    System.debug(' Error: ' + err.getMessage());
+                    System.debug('Fields causing error: ' + err.getFields());
+                }       
+            }}
+        
+    } 
+    Public static void chatgptDmlQue(){
+        //Account acc = new Account();
+        
+        try{
+            system.debug('adding null value');
+            Account acc = [Select Name from Account Where Name = 'zys'];
+            Insert acc;
+            
+        }
+        catch(DMLException e){
+            system.debug(e);
+        }
+        catch(NullPointerException e){
+            system.debug(e);
+        }
+        catch(QueryException e){
+            system.debug(e);
+            system.debug(e.getStackTraceString());
+        }
+        
+    }
+    
+    public static void MixedScenarioHandler(){
+        try {
+            
+            List<Account> accList = new List<Account>();
+            accList.add(new Account(Name = 'Swa123'));
+            accList.add(new Account(Name = 'Swa12'));
+            accList.add(new Account(Name = null)); 
+            Insert accList;
+        }
+        catch(DMLException e){
+            //system.debug(e);
+            throw new PractiseException();
+        }
+        catch (Exception e) {
+            system.debug(e);
+        }      
+    }
+}
+
+/*
+* String output = PractiseDML.createAccount('SwathiDML', 'Hot');
+system.debug(output);
+
+--------------------------------------------
+Emps obj 
+public class DmlEmpDay35 {
+public String EmpName;
+public String Gender;
+public String Position;
+public Integer Salary;
+
+public DmlEmpDay35(String EmployeeName,String EmpGender,String EmpPosition,Integer EmpSalary){
+EmpName = EmployeeName;
+Gender = EmpGender;
+Position = EmpPosition;
+Salary = EmpSalary;
+}
+public static void insertEmp(){
+List<Emp__c> findEmp = [SELECT Id FROM Emp__c WHERE Name = :EmpName Limit 1];
+
+if(!findEmp.isEmpty()){
+System.debug('Employee Already exists: ' + findEmp);
+}
+else{
+Emp__c newEmp = new Emp__c();
+newEmp.Name = EmpName;
+newEmp.Gender__c = Gender;
+newEmp.Position__c = Position;
+newEmp.Salary__c = Salary;
+
+insert newEmp;
+System.debug('New Employee created: ' + newEmp);
+}
+}
+public static void deleteEmp(String userInputName){
+List<Emp__c> findEmp = [SELECT Id FROM Emp__c WHERE Name = :userInputName];
+if(!findEmp.isEmpty()){
+delete findEmp;
+System.debug('Employee record Deleted');
+}
+else{
+System.debug('Employee not found');
+}
+}
+}
+*/
