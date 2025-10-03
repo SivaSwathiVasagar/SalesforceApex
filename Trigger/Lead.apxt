@@ -1,0 +1,36 @@
+/* Author 	- svasagar
+ * Date 	  - 09/30/2025
+ * Purpose 	- In Lead , When Status == 'Closed - Converted' or 'Closed - Not Converted' throw Error
+ * 			    - When AnnualRevenue > 200000, Update Rating = Hot
+ */
+ 
+trigger LeadTrigger on Lead (before insert, before update) 
+{
+    Switch on Trigger.OperationType
+    {
+        When Before_Insert
+        {
+            for(Lead record : Trigger.New)
+            {
+                if(record.Status == 'Closed - Converted' || record.Status == 'Closed - Not Converted')
+                {
+                    record.addError(Label.LeadCreationError);
+                }
+                if(record.AnnualRevenue > 200000)
+                {
+                    record.Rating = 'Hot';
+                }
+            }
+        }
+        When Before_Update
+        {
+            for(Lead record : Trigger.New)
+            {
+                if(record.Status == 'Closed - Not Converted' && record.Description == Null) //check
+                {
+                    record.addError(Label.LeadDescriptionError);
+                }
+            }
+        }
+    }
+}
