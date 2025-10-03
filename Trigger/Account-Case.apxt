@@ -1,0 +1,93 @@
+/* Author 	- svasagar
+ * Date 	  - 09/30/2025
+ * Purpose 	- After Update -> Update Case Status = Closed , When Account Active = No 
+ * Purpose 	- Before Update -> User should not be allowed to edit Billing address more than 5 times.
+ */
+ 
+trigger AccountTrigger on Account (before update, after update) {
+    Switch on Trigger.OperationType{
+        When Before_Update{
+            //Integer EditCount;
+            Integer MaxEditCount = Integer.valueOf(System.Label.AccountMaxEdit);
+            for(Account accRecord : Trigger.New){
+                Account accOldRecord = Trigger.OldMap.get(accRecord.Id);
+                System.debug('OLD  : ' + accOldRecord.EditCount__c + ' NEW  : ' + accRecord.EditCount__c);
+                System.debug('New : ' + accRecord);
+                System.debug('Old :' + accOldRecord);
+                
+                if(accRecord.BillingCountryCode != accOldRecord.BillingCountryCode || accRecord.EditCount__c == null){
+                		accRecord.EditCount__c++;  
+                }
+                
+                if(accRecord.EditCount__c > MaxEditCount){
+                    system.debug(accRecord.EditCount__c);
+                    accRecord.addError('User is not allowed to edit more than 5 times');
+                }
+            }
+        }
+     
+        
+        When After_Update{
+            List<Case> caseList = [Select Id, Status, Account.Active__c from Case Where AccountId = :Trigger.New]; // check
+            if(!caseList.isEmpty()){
+                for(Case caseRecord : caseList){
+                    if(Trigger.NewMap.get(caseRecord.AccountId).Active__c == 'No'){
+                        caseRecord.Status = 'Closed';
+                    }
+                }
+            } update caseList;
+        }
+    }
+}
+
+/*
+ * @ - Update contact Language = Tamil, When Account Rating = Warm 
+ * 
+ */
+
+//-------------------------MAP--------------------------------// 
+/*
+trigger AccountTrigger on Account (after update) {
+     Switch on Trigger.OperationType{
+        When After_Update{
+             Set<Id> accId = new Set<Id>();
+             for(Account record: Trigger.New){
+                accId.add(record.Id);
+                System.debug('Account Trigger fired for: ' + record.Id + ' Rating: ' + record.Rating);
+           } 
+            
+            List<Contact> conList = [Select Id, Languages__c, AccountId 
+                                     From Contact Where AccountId = :Trigger.New];
+            if(!conList.isEmpty()){
+              
+                for(Contact con : conList){
+                    if(Trigger.NewMap.get(con.AccountId).Rating == 'Warm'){
+                        con.Languages__c = 'Tamil';
+                    }
+                } Update conList;    
+            }
+        }
+    }  
+}
+
+*/
+
+//-------------------------List--------------------------------// 
+
+/* trigger AccountTrigger on Account (after update) {
+   Switch on Trigger.OperationType{
+        When After_Update{
+            List<Account> accList = [Select Id, Rating, (Select Name, Languages__c from Contacts) From Account Where Id =:Trigger.New];
+            List<Contact> contactList = new List<Contact>();
+            for(Account record : accList){
+                if(record.Rating == 'Warm'){
+                    for(Contact conRecord : record.contacts){
+                        conRecord.Languages__c = 'Tamil';
+                        contactList.add(conRecord);
+                    }
+                }
+            } Update contactList;
+        }
+    } 
+} 
+*/
