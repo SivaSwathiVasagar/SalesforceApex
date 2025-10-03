@@ -1,0 +1,18 @@
+public class SOQLSample {
+    Public Static Integer count;
+    public Static Integer getRatingByCount(String Rating){
+        
+        List<AggregateResult> accountResults = [SELECT Count(Id) ratingCount, Rating FROM Account WHERE Rating = :Rating GROUP BY Rating];
+        if(!accountResults.isEmpty()){
+            count = (Integer)accountResults[0].get('ratingCount');  
+        }
+        return count ;
+    }
+    
+    public Static void getContacts ( ) {
+         List<Account> accountWithContact = [Select Name, ID FROM Account WHERE ID IN (SELECT AccountID FROM Contact where AccountID != Null)];
+        //List<Contact> accountWithContact = [Select Name, AccountID FROM Contact WHERE AccountID IN (SELECT ID FROM Account)];
+        Integer countSize  = accountWithContact.size();
+        System.debug(countSize);
+    }    
+}
