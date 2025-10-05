@@ -1,0 +1,11 @@
+/* Author 	- svasagar
+ * Date 	  - 10/03/2025
+ * Purpose 	- Update Opportunity Count in Account Obj When Stage = 'Negotiation/Review'
+ */
+
+trigger OppTrigger on Opportunity (After Update, After Insert, After Delete, After UnDelete) { 
+   
+    OpportunityTriggerHandler obj = new OpportunityTriggerHandler();
+    obj.doActions();
+
+}
