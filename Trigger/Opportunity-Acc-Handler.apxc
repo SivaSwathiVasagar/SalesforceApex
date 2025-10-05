@@ -1,0 +1,84 @@
+/* Author 	- svasagar
+ * Date 	  - 10/03/2025
+ * Purpose 	- Handler Class - Update Opportunity Count in Account Obj When Stage = 'Negotiation/Review'
+ */
+
+public class OpportunityTriggerHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OpportunityTriggerHandler(){
+        
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+        //doActions();  ---> you can inovke method from here too
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                updateCountOfOpp(triggerNew);
+            }
+            When After_Update{
+                updateCountOfOpp(triggerNew);
+            }
+            When After_Delete{
+                updateCountOfOpp(triggerOld);
+            }
+            When After_UnDelete{
+                updateCountOfOpp(triggerNew);
+            }
+        }
+    }
+    
+    public void updateCountOfOpp(List<Opportunity> oppList){
+        //1. Collect unique parent ids
+        Set<Id> accountIds = new Set<Id> ();
+        
+        for(Opportunity oppRecord : oppList){
+            // Only Update
+            if(Trigger.isUpdate){
+                if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName || 
+                   oppRecord.AccountId != triggerOldMap.get(oppRecord.Id).AccountId){
+                       if(oppRecord.AccountId != Null){
+                           accountIds.add(oppRecord.AccountId);
+                       }
+                       if(triggerOldMap.get(oppRecord.Id).AccountId != Null){
+                           accountIds.add(triggerOldMap.get(oppRecord.Id).AccountId);
+                       }
+                   }   
+            } 
+            // Only when Insert, Delete, UnDelete
+            else{
+                accountIds.add(oppRecord.AccountId);	
+            }
+            //system.debug('Set :: ' + accountIds);
+        } 
+        // 2. Query all Accounts with Opp Where StageName = 'Negotiation/Review' 
+        
+        List<Account> accList = [Select Id, Opp_Count__c, 
+                                 (Select Id From Opportunities 
+                                  Where StageName = 'Negotiation/Review') 
+                                 From Account Where Id In :accountIds];
+        //system.debug('accList : '+ accList);
+        
+        // 3. Create a List to Update Account
+        
+        List<Account> updateAccount  = new List<Account>(); 
+        
+        for(Account accRecord : accList){
+            //system.debug(accRecord.Opportunities);
+            accRecord.Opp_Count__c = accRecord.Opportunities.size();
+            updateAccount.add(accRecord);
+        }
+        
+        if(updateAccount.size() > 0){
+            System.debug('Updated Count : ' + updateAccount);
+            Update updateAccount;
+        } 
+    }
+    
+}
