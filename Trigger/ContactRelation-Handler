@@ -1,0 +1,80 @@
+/* Author 	- svasagar
+* Date 		- 10/06/2025
+* Purpose 	- When Contact_Relationship__c record Owner is changed,
+*			- Then record Name must be changed
+*/
+
+public class ContactRelationTriggerHandler {
+    
+    List<Contact_Relationship__c> triggerNew;
+    List<Contact_Relationship__c> triggerOld;
+    Map<Id, Contact_Relationship__c> triggerNewMap;
+    Map<Id, Contact_Relationship__c> triggerOldMap;
+    
+    public ContactRelationTriggerHandler(){
+        
+        triggerNew    = (List<Contact_Relationship__c>) Trigger.New;
+        triggerOld    = (List<Contact_Relationship__c>) Trigger.Old;
+        triggerNewMap = (Map<Id, Contact_Relationship__c>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Contact_Relationship__c>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                
+            }
+            When After_Update{
+                
+            }
+            When Before_Delete{
+                
+            }
+            When Before_Update{
+                onBeforeUpdate(triggerNew);
+            }
+            
+            When After_Delete{
+                
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    
+    public void onBeforeUpdate(List<Contact_Relationship__c> crList)
+    { 
+        List <Contact_Relationship__c> childRecordToBeUpdated = new List<Contact_Relationship__c> ();
+        
+        // Set to store Owner Id - usually we have only Owner ID not related fields unless its querried
+        Set<Id> OwnerIds = new Set<Id>();
+        
+        for(Contact_Relationship__c record : crList){
+            if(record.OwnerId != triggerOldMap.get(record.Id).OwnerId){
+                //record.Name = record.Owner.Name;
+                OwnerIds.add(record.OwnerId);
+            }
+        }
+        // Map to collect Owner Names
+        Map<Id, User> userNameMap = new Map<Id, User>([SELECT Id, Name FROM User WHERE Id IN :OwnerIds]);
+        
+        for(Contact_Relationship__c record : crList){
+            if(record.OwnerId != triggerOldMap.get(record.Id).OwnerId){
+                record.Name = userNameMap.get(record.OwnerId).Name;
+                childRecordToBeUpdated.add(record);
+            }
+        }
+        
+        try{
+            if(!childRecordToBeUpdated.isEmpty())
+            {
+                Update childRecordToBeUpdated;
+                system.debug(childRecordToBeUpdated);
+            }  
+        }
+        catch(Exception e){
+            System.debug('Error with Record Name : ' + e.getMessage());
+        }
+    }
+    
+}
