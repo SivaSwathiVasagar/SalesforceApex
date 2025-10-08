@@ -1,0 +1,108 @@
+/* Author 	- svasagar
+* Date 	- 10/03/2025
+* Purpose 	- Handler Class - Write a trigger when opp stage changes, create a task to follow up , limit by 1 task/Stage
+*/
+
+public class OpportunityTriggerHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OpportunityTriggerHandler(){
+        
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+        //doActions();  ---> you can inovke method from here too
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert(triggerNew); 
+            }
+            When After_Update{
+                onAfterUpdate(triggerNew);
+            }
+            When After_Delete{
+                
+            }
+            When After_UnDelete{
+               
+            }
+        }
+    }
+  
+    // Write a trigger when opp stage changes, create a task to follow up , limit by 1 task/Stage
+    Public void onAfterInsert(List<Opportunity> OppList){
+       // List to Insert 
+       List<Task> taskListToBeInsert = new List<Task> ();
+        
+        for(Opportunity oppRecord : OppList){ 
+            if(oppRecord.StageName == 'Prospecting'){
+                Task obj = new Task (
+                    Subject = 'Follow-up',
+                    WhatId = oppRecord.Id,
+                    OwnerId = oppRecord.OwnerId,
+                    Description = 'Please follow up the new task' 
+                );
+                taskListToBeInsert.add(obj);
+            }
+        }
+        Insert taskListToBeInsert;
+    }
+    
+    
+    public void onAfterUpdate(List<Opportunity> OppList){
+        // Map to store Opp Id , StageName
+        Map<Id, String> oppStageMap = new Map<Id, String>();
+        
+        for(Opportunity oppRecord : OppList){
+             if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName) { 
+             oppStageMap.put(oppRecord.Id, oppRecord.StageName);
+             }
+         }
+        
+        // List to querry old Task
+        List<Task> existingTask = [Select Id, Subject, WhatId from Task Where WhatId in : oppStageMap.keySet()];
+        
+        // Set to store existing Tasks Subject
+        Set<String> existingTaskSubject = new Set<String>();
+        
+        for(Task record : existingTask){
+            existingTaskSubject.add(record.WhatId + '-' + record.Subject);
+        }
+        
+        // Task List to be updated
+        List<Task> taskListToUpdate = new List<Task> ();
+      
+        for(Opportunity oppRecord : OppList){
+            if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName) {
+               String currentStageName = oppRecord.StageName; 
+                String key = oppRecord.Id + '-' + 'Follow-up: StageName has Changed : ' + currentStageName;
+                
+                // If Task Subject Set contains Key - Return
+                if(existingTaskSubject.contains(key)){
+                    return;
+                }
+                
+                Task obj = new Task (
+                    Subject = 'Follow-up: StageName has Changed : ' + currentStageName,
+                    WhatId = oppRecord.Id,
+                    OwnerId = oppRecord.OwnerId,
+                    Description = 'Stage Name has Changed, Please follow up the new task' 
+                );
+                taskListToUpdate.add(obj);	
+            }   
+        }
+        try{
+            if(!taskListToUpdate.isEmpty()){
+                Insert taskListToUpdate;
+            }
+        }
+        catch(Exception e){
+            system.debug(' Error in inserting Task : ' + e.getMessage());
+        }
+    }
+}
