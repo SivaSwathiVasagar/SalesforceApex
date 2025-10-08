@@ -1,0 +1,100 @@
+/* Author 	- svasagar
+* Date 		- 10/06/2025
+* Purpose 	- When Customer_Project__c record is created with Status field 'Active'
+*			- Parent Opportunity record Active_Customer_Project__c field must be Checked
+*/
+
+
+public class CustomerTriggerHandler {
+    List<Customer_Project__c> triggerNew;
+    List<Customer_Project__c> triggerOld;
+    Map<Id, Customer_Project__c> triggerNewMap;
+    Map<Id, Customer_Project__c> triggerOldMap;
+    
+    public CustomerTriggerHandler(){
+        
+        triggerNew    = (List<Customer_Project__c>) Trigger.New;
+        triggerOld    = (List<Customer_Project__c>) Trigger.Old;
+        triggerNewMap = (Map<Id, Customer_Project__c>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Customer_Project__c>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                handleActiveStatus(triggerNew, Null);
+            }
+            When After_Update{
+                handleActiveStatus(triggerNew, triggerOldMap);
+            }
+            When After_Delete{
+                handleActiveStatus(triggerOld, triggerOldMap);
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    
+    
+    public void handleActiveStatus(List<Customer_Project__c> cpList, Map<Id, Customer_Project__c> oldMap) {
+        Set<Id> oppIds = new Set<Id>();
+        
+        // Collect related Opportunity Ids
+        for (Customer_Project__c cpRecord : cpList) {
+            if (cpRecord.Opportunity__c != Null) {
+                oppIds.add(cpRecord.Opportunity__c);
+            }
+            // For Update and Delete
+            if (oldMap != Null && oldMap.get(cpRecord.Id).Opportunity__c != Null) {
+                oppIds.add(oldMap.get(cpRecord.Id).Opportunity__c);
+            }
+        }
+        
+        if (oppIds.isEmpty()) return;
+        
+        // Map to store Opp Id and Customer record
+        Map<Id, List<Customer_Project__c>> oppMap = new Map<Id, List<Customer_Project__c>>();
+        
+        // Query all child Customer_Projects for Opportunitiesin SET
+        List<Customer_Project__c> cpListWithOpp =    [SELECT Id, Status__c, Opportunity__c 
+                                                      FROM Customer_Project__c 
+                                                      WHERE Opportunity__c IN :oppIds			
+                                                     ];
+        
+        for (Customer_Project__c cpRecord : cpListWithOpp) {
+            if (!oppMap.containsKey(cpRecord.Opportunity__c)) {
+                oppMap.put(cpRecord.Opportunity__c, new List<Customer_Project__c>());
+            }
+            oppMap.get(cpRecord.Opportunity__c).add(cpRecord);
+        }
+        
+        // Opp List to Update
+        List<Opportunity> oppsToUpdate = new List<Opportunity>();
+        
+        for (Id oppId : oppMap.keySet()) {
+            Boolean isActive = false;
+            
+            for (Customer_Project__c cpRecord : oppMap.get(oppId)) {
+                if (cpRecord.Status__c == 'Active') {
+                    isActive = true;
+                    break;
+                }
+            }
+            
+            Opportunity opp = new Opportunity(
+                Id = oppId,
+                Active_Customer_Project__c = isActive
+            );
+            oppsToUpdate.add(opp);
+        }
+        
+        if (!oppsToUpdate.isEmpty()) {
+            try {
+                update oppsToUpdate;
+            } catch (Exception e) {
+                System.debug('Error updating Opportunities: ' + e.getMessage());
+            }
+        }
+    }
+}
