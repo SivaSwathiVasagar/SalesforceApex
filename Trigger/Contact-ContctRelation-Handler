@@ -1,0 +1,86 @@
+/* Author 	- svasagar
+* Date 		- 10/06/2025
+* Purpose 	- When Contact is created with ContactRelationship__c field Checked,
+*			- Then a ContactRelationship__c child should be created along
+*			- When Contact gest deleted, Child Should be deleted
+*/
+public class ContactTriggerHandler {
+    List<Contact> triggerNew;
+    List<Contact> triggerOld;
+    Map<Id, Contact> triggerNewMap;
+    Map<Id, Contact> triggerOldMap;
+    public static List<Contact_Relationship__c> childRecordTobeDeleted = new List<Contact_Relationship__c>();
+    
+    public ContactTriggerHandler(){
+        
+        triggerNew    = (List<Contact>) Trigger.New;
+        triggerOld    = (List<Contact>) Trigger.Old;
+        triggerNewMap = (Map<Id, Contact>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Contact>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert(triggerNew);
+            }
+            When After_Update{
+                
+            }
+            When Before_Delete{
+                onBeforeDelete(triggerOld);
+            }
+            When Before_Update{
+                
+            }
+            
+            When After_Delete{
+                onAfterDelete(triggerOld);
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    public void onAfterInsert(List<Contact> contactList){
+     
+        // Create a List to store Contact_Relationship__c record
+        List<Contact_Relationship__c> childRecordTobeInserted = new  List<Contact_Relationship__c>  ();
+
+        for(Contact record : contactList){
+            if(record.ContactRelationship__c == True){
+                Contact_Relationship__c obj = new Contact_Relationship__c(
+                Name = record.LastName, Contact__c = record.Id);
+                
+                childRecordTobeInserted.add(obj);
+            }
+        }
+        try{
+            if(!childRecordTobeInserted.isEmpty()){
+                Insert childRecordTobeInserted;
+            }
+        }
+        catch(Exception e){
+            system.debug(' Error Occured during Insert : ' + e.getMessage());
+        }
+    }
+
+    public void onBeforeDelete(List<Contact> contactList){
+        // Get Ids from Old Map
+        Set<Id> contactIds = triggerOldMap.keySet();
+        
+        childRecordTobeDeleted =  [Select Id, Name from Contact_Relationship__c 
+                        		   Where Contact__c in :contactIds];
+    }
+    
+    public void onAfterDelete(List<Contact> contactList) {
+        try{
+            if(!childRecordTobeDeleted.isEmpty()){
+            Delete childRecordTobeDeleted;
+        }
+        }
+        catch(Exception e){
+            system.debug('Error While Deleting Child record : ' + e.getMessage());
+        }	
+    }
+}
