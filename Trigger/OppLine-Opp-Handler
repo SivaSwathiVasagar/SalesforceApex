@@ -1,0 +1,109 @@
+/* Author 	- svasagar
+* Date 		- 10/11/2025
+* Purpose 	- Create a custom field in Opportunity to display product codes
+*			- When a lineItem is added, Opp should display codes
+*/
+
+public class OppLineTriggerHandler
+{
+    List<OpportunityLineItem> triggerNew;
+    List<OpportunityLineItem> triggerOld;
+    Map<Id, OpportunityLineItem> triggerNewMap;
+    Map<Id, OpportunityLineItem> triggerOldMap;
+    
+    public OppLineTriggerHandler()
+    {
+        triggerNew    = (List<OpportunityLineItem>) Trigger.New;
+        triggerOld    = (List<OpportunityLineItem>) Trigger.Old;
+        triggerNewMap = (Map<Id, OpportunityLineItem>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, OpportunityLineItem>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                handleChanges(false);
+            }
+            When After_Update{
+            }
+            When After_Delete{
+                handleChanges(true);
+            }
+            When After_UnDelete{   
+            }
+        }
+    }
+    
+    // ------------------Collect Opp Id ---------------------------//
+   
+    public Set<Id> collectIds(Boolean isDelete)
+    {	
+        // Set to store Opp Id
+        Set<Id> oppIds = new Set<Id>();
+        
+        if (!isDelete) { // Insert and Update
+            for(OpportunityLineItem record : triggerNew){
+                oppIds.add(record.OpportunityId);
+            }
+        } 
+        else { 			// Delete
+            for (OpportunityLineItem record : triggerOld){ 
+                oppIds.add(triggerOldMap.get(record.Id).OpportunityId);
+            }
+        }
+        return oppIds;
+    }
+    
+   // ------------------CONSTRUCT- MAP ---------------------------//
+     
+    public Map<Id, List<String>> constructOppAndLineMap(Set<Id> oppIds)
+    {
+		// List to store OpportunityLineItem 
+        List<OpportunityLineItem> oppLineList = [Select Id, OpportunityId, ProductCode 
+                                                 from OpportunityLineItem 
+                                                 Where OpportunityId in : oppIds
+                                           		 ];
+         // Map to Store Opp Id and Code   
+        Map<Id, List<String>> oppAndLineMap = new Map<Id, List<String>>();
+        
+        for(OpportunityLineItem record : oppLineList){
+            if(!oppAndLineMap.containsKey(record.OpportunityId)){
+                oppAndLineMap.put(record.OpportunityId, new List<String>());
+            }
+            oppAndLineMap.get(record.OpportunityId).add(record.ProductCode);
+        }
+        return oppAndLineMap;
+    }
+    
+    // ------------------MAIN METHOD ---------------------------//
+  
+    public void handleChanges(Boolean isDelete) {
+        
+        Set<Id> oppIds = collectIds(isDelete);
+       
+        if (oppIds.isEmpty()) return;
+		
+        Map<Id, List<String>> oppAndLineMap = constructOppAndLineMap(oppIds);
+        
+        List<Opportunity> oppToUpdated = new List<Opportunity>();
+        
+        for(Id oppId : oppIds){
+            Opportunity obj = new Opportunity(Id = oppId);
+            if(oppAndLineMap.containsKey(oppId)){
+                obj.OppLineItem_Code__c = String.join(oppAndLineMap.get(oppId),', ');
+            }
+            else{
+                obj.OppLineItem_Code__c = Null;
+            } 
+            oppToUpdated.add(obj);
+        }
+        //system.debug('OppUpdate : '+ oppToUpdated);
+        try{
+            if(!oppToUpdated.isEmpty()){
+                Update oppToUpdated;
+            }
+        }
+        catch(Exception e){
+            System.debug('Error While Updating Opp : ' + e.getMessage());
+        }
+    } 
+}
