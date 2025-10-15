@@ -1,0 +1,11 @@
+/* Author 	- svasagar
+* Date 		- 10/10/2025
+* Purpose 	- When Customer_c record is created with Account, Account manager(User)
+*			- User should be added to the Accounts Team in Account record
+*/
+
+
+trigger CustomerAccTrigger on Customer__c (after insert, After Update, After Delete) {
+CustomerAccTriggerHandler handler = new CustomerAccTriggerHandler ();
+    handler.doActions();
+}
