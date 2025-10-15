@@ -1,0 +1,157 @@
+/* Author 	- svasagar
+* Date 		- 10/10/2025
+* Purpose 	- When Customer_c record is created with Account, Account manager(User)
+*			- User should be added to the Accounts Team in Account record
+*/
+
+public class CustomerAccTriggerHandler {
+    List<Customer__c> triggerNew;
+    List<Customer__c> triggerOld;
+    Map<Id, Customer__c> triggerNewMap;
+    Map<Id, Customer__c> triggerOldMap;
+    
+    public CustomerAccTriggerHandler(){
+        
+        triggerNew    = (List<Customer__c>) Trigger.New;
+        triggerOld    = (List<Customer__c>) Trigger.Old;
+        triggerNewMap = (Map<Id, Customer__c>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Customer__c>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert();
+            }
+            When After_Update{
+                onAfterUpdate();
+            }
+            When After_Delete{
+                onAfterDelete();
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    
+    // --------------------- INSERT ---------------------//
+   
+    public void onAfterInsert(){
+        // List to store Account team member to be Inserted
+        List<AccountTeamMember> accountTeam = new List<AccountTeamMember> ();
+        
+        for(Customer__c record : triggerNew){
+            if(record.Account_Manager__c != Null) {
+                AccountTeamMember obj = new AccountTeamMember(
+                    AccountId = record.Parent_Account__c,
+                    UserId = record.Account_Manager__c,
+                    TeamMemberRole = 'Account Manager'  // Custom Label
+                );
+                accountTeam.add(obj);
+            }   
+        }
+        try{
+            if(!accountTeam.isEmpty()){
+                insert accountTeam;
+            }
+        }
+        catch(Exception e){
+            system.debug('Error in inserting : ' + e.getMessage());
+        }
+    }
+        
+  // ---------------------HELPER-FIND ACTIVE MANAGERS ---------------------//
+    
+     public void handleAccountTeamDeletion(Set<Id> userIds, Set<Id> accountIds) {
+        if (userIds.isEmpty() || accountIds.isEmpty()) return;
+
+        // Find active managers who still handle customers on those accounts
+        Set<Id> stillActive = new Set<Id>();
+        for (Customer__c record : [	SELECT Account_Manager__c
+                                    FROM Customer__c
+                                    WHERE Account_Manager__c IN :userIds
+                                    AND Parent_Account__c IN :accountIds])
+        {
+            stillActive.add(record.Account_Manager__c);
+        }
+
+       // Remove Managers who are Still Active
+        userIds.removeAll(stillActive);
+
+        // Delete the InActive Managers
+         try{
+             if (!userIds.isEmpty()) {
+                 deleteAccountTeamMembers(userIds, accountIds);
+             }
+         }
+         catch(Exception e){
+             system.debug('Error in inserting : ' + e.getMessage());
+         }
+         
+    }
+    
+   // --------------------- HELPER-(UPDATE && DELETE) --------------------- //
+  
+    public void deleteAccountTeamMembers(Set<Id> userIds, Set<Id> accountIds) {
+        delete [SELECT Id FROM AccountTeamMember
+            	WHERE UserId IN :userIds 
+                AND AccountId IN :accountIds ];
+    }
+  
+  // --------------------- UPDATE ---------------------//
+  
+    public void onAfterUpdate() {
+        List<AccountTeamMember> InsertNewMembers = new List<AccountTeamMember>();
+        Set<Id> toDeleteUsers = new Set<Id>();
+        Set<Id> accIds = new Set<Id>();
+        
+        for (Customer__c record : triggerNew) {
+            // Changes in Account manager 
+            if (record.Account_Manager__c != triggerOldMap.get(record.Id).Account_Manager__c)
+            {  
+                Customer__c oldRecord = triggerOldMap.get(record.Id);
+                // Add new manager
+                if (record.Account_Manager__c != null) {
+                    InsertNewMembers.add(new AccountTeamMember(
+                        AccountId = record.Parent_Account__c,
+                        UserId = record.Account_Manager__c,
+                        TeamMemberRole = 'Account Manager'
+                    ));
+                }
+                // Remove old manager
+                if (oldRecord.Account_Manager__c != null) {
+                    toDeleteUsers.add(oldRecord.Account_Manager__c);
+                    accIds.add(record.Parent_Account__c);
+                }
+            }
+        }
+        
+        // Remove InActive managers safely
+        handleAccountTeamDeletion(toDeleteUsers, accIds);
+        
+        // Insert new ones
+        try{
+            if (!InsertNewMembers.isEmpty()) {
+                insert InsertNewMembers;
+            }
+        }
+        catch(Exception e){
+            system.debug('Error in inserting : ' + e.getMessage());
+        }
+    }
+    // --------------------- DELETE ---------------------//
+    
+     public void onAfterDelete() {
+        Set<Id> userIdsToRemove = new Set<Id>();
+        Set<Id> accIds = new Set<Id>();
+
+        for (Customer__c record : triggerOld) {
+            if (record.Account_Manager__c != null) {
+                userIdsToRemove.add(record.Account_Manager__c);
+                accIds.add(record.Parent_Account__c);
+            }
+        }
+
+        handleAccountTeamDeletion(userIdsToRemove, accIds);
+    }
+}
