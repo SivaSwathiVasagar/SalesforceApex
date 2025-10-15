@@ -1,0 +1,10 @@
+/* Author 	- svasagar
+* Date 		- 10/11/2025
+* Purpose 	- Create a custom field in Opportunity to display product codes
+*			- When a lineItem is added, Opp should display codes
+*/
+
+trigger OppLineTrigger on OpportunityLineItem (After Insert, After Delete) {
+   OppLineTriggerHandler handler = new OppLineTriggerHandler();
+    handler.doActions();
+}
