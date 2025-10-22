@@ -1,0 +1,161 @@
+/* Author 	- svasagar
+* Date 		- 10/16/2025
+* Purpose 	- Whenever a new Opportunity is created, a Task should also be automatically generated 
+*			- And assigned to the Opportunity Owner. 
+*			- But Opportunity Stage cannot be changed until that Task is closed.
+*/
+
+public class OpportunityTriggerHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OpportunityTriggerHandler(){
+        
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+        //doActions();  ---> you can inovke method from here too
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert(triggerNew);
+            }
+            When Before_Update{
+                onBeforeUpdate(triggerNew);
+            }
+            When After_Update{
+                onAfterUpdate(triggerNew);
+            }
+            When After_Delete{
+            }
+            When After_UnDelete{
+                
+        }
+    }
+    }
+    //------------------------- INSERT ----------------------------//
+
+    // Write a trigger when opp stage changes, create a task to follow up , limit by 1 task/Stage
+    Public void onAfterInsert(List<Opportunity> OppList){
+       // List to Insert 
+       List<Task> taskListToBeInsert = new List<Task> ();
+        
+        for(Opportunity oppRecord : OppList){ 
+            if(oppRecord.StageName == 'Prospecting'){
+                Task obj = new Task (
+                    Subject = 'Follow-up: StageName : ' + oppRecord.StageName,
+                    WhatId = oppRecord.Id,
+                    OwnerId = oppRecord.OwnerId,
+                    Description = 'Please follow up the new task' 
+                );
+                taskListToBeInsert.add(obj);
+            }
+        }
+        Insert taskListToBeInsert;
+    }
+    
+    //------------------------- BEFORE UPDATE ----------------------------//
+    
+    public void onBeforeUpdate(List<Opportunity> OppList){
+        
+        // Find Current Opportunities whose StageName has changed
+        Set<Id> OppIds = new Set<Id> ();
+        //Map<Id, String> changedStageOppMap = new Map<Id, String>();
+        
+        for(Opportunity oppRecord : OppList){
+            if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName) { 
+                OppIds.add(oppRecord.Id);
+            }
+        }
+        
+        if(OppIds.isEmpty()) Return;
+        
+       // Find all open Tasks linked to those Opportunities
+        List<Task> taskStatusList = [Select Id, WhatId, Status, Subject From Task 
+                                     Where Status != 'Completed' 
+                                     And WhatId in : OppIds 
+                                    ];
+        
+        // Construct Map with Opp Id and Open Tasks Subject Names
+        Map<Id, List<String>> existingTaskSubjectsOppMap = new Map<Id, List<String>>();
+        
+        For(Task record : taskStatusList){
+            if(!existingTaskSubjectsOppMap.containskey(record.WhatId)){
+                existingTaskSubjectsOppMap.put(record.WhatId, new List<String> ());
+            }
+            existingTaskSubjectsOppMap.get(record.WhatId).add(record.Subject);
+        }
+        
+        //system.debug('oppExistingStageMap :' + existingTaskSubjectsOppMap);
+        //system.debug('oppStageMap : ' + changedStageOppMap);
+        
+        // Throw Error On Opp record for open Task
+        for(Opportunity record : triggerNew){
+            if(existingTaskSubjectsOppMap.containsKey(record.Id)){
+                String combinedSubjects = String.join(existingTaskSubjectsOppMap.get(record.Id) , ', ');
+                if (combinedSubjects.contains(triggerOldMap.get(record.Id).StageName)) {
+                    record.addError('You cannot change the Stage while open tasks exist for the previous stage'); //Custom Label
+                }  
+            }
+        } 
+    }
+
+    //------------------------- AFTER UPDATE ----------------------------//
+    
+    public void onAfterUpdate(List<Opportunity> OppList){
+        // Map to store Opp Id , StageName
+        Map<Id, String> oppStageMap = new Map<Id, String>();
+        
+        for(Opportunity oppRecord : OppList){
+             if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName) { 
+             oppStageMap.put(oppRecord.Id, oppRecord.StageName);
+             }
+         }
+        
+        // List to querry old Task
+        // Map<Id, List<Task>> existingTaskMap = new Map<Id, List<Task>> 
+        List<Task> existingTask = [Select Id, Subject, WhatId from Task Where WhatId in : oppStageMap.keySet()];
+        
+        // Set to store existing Tasks Subject
+        Set<String> existingTaskSubject = new Set<String>();
+        
+        for(Task record : existingTask){
+            existingTaskSubject.add(record.WhatId + '-' + record.Subject);
+        }
+        
+        // Task List to be updated
+        List<Task> taskListToUpdate = new List<Task> ();
+      
+        for(Opportunity oppRecord : OppList){
+            if(oppRecord.StageName != triggerOldMap.get(oppRecord.Id).StageName) {
+               	String currentStageName = oppRecord.StageName; 
+                String key = oppRecord.Id + '-' + 'Follow-up: StageName : ' + currentStageName;
+                
+                // If Task Subject Set contains Key - Return
+                if(existingTaskSubject.contains(key)){
+                    return;
+                }
+                
+                Task obj = new Task (
+                    Subject = 'Follow-up: StageName : ' + currentStageName,
+                    WhatId = oppRecord.Id,
+                    OwnerId = oppRecord.OwnerId,
+                    Description = 'Stage Name has Changed, Please follow up the new task' 
+                );
+                taskListToUpdate.add(obj);	
+            }   
+        }
+        try{
+            if(!taskListToUpdate.isEmpty()){
+                Insert taskListToUpdate;
+            }
+        }
+        catch(Exception e){
+            system.debug(' Error in inserting Task : ' + e.getMessage());
+        }
+    }
+}
