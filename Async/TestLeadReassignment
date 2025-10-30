@@ -1,0 +1,172 @@
+/* Author 	- svasagar
+* Date 		- 10/25/2025
+* Purpose 	- Whenever a Lead with Days_Since_Last_Activity__c > 5 days,  
+*			- Owner Id should be mapped to Manager or Default user	
+*			- Task should be created for Lead	
+*/
+@isTest
+public class TestLeadReassignment {
+    
+    @testSetup
+    public static void setupData() {
+        // Insert List for Reps and Manager
+        List<User> managerList = new List<User> ();
+        List<User> repList = new List<User> ();
+        
+        // Create Manager 
+        User manager = new User(
+            Alias = 'mgr1',
+            Email = 'manager@test.com',
+            UserName = 'manager@555test.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Manager',
+            TimeZoneSidKey = 'America/New_York',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1].Id
+        );
+        
+        // Create default Manager 
+        User defaultManager = new User(
+            Alias = 'mgr2',
+            Email = 'manager23@test.com',
+            UserName = 'manager@585test.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Manager',
+            TimeZoneSidKey = 'America/New_York',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1].Id
+        );
+        
+        managerList.add(manager);
+        managerList.add(defaultManager);
+        insert managerList;
+        
+        // Create Rep (whose manager is the above user)
+        User repWithManager = new User(
+            Alias = 'rep1',
+            Email = 'rep@test.com',
+            UserName = 'rep@555test.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Rep',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = manager.ProfileId,
+            TimeZoneSidKey = 'America/New_York',
+            ManagerId = manager.Id
+        );
+        
+        User repWithoutManager = new User(
+            Alias = 'rep2',
+            Email = 'rep2@test.com',
+            UserName = 'rep2@584test.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Rep2',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1].Id,
+            TimeZoneSidKey = 'America/New_York'
+        );
+        
+        repList.add(repWithManager);
+        repList.add(repWithoutManager);
+        insert repList;
+        
+        // Create Leads assigned to rep user
+        List<Lead> leadList = new List<Lead>();
+        for(User singleRep : repList){
+            for (Integer i = 1; i <= 2; i++) {
+            leadList.add(new Lead(
+                LastName = 'Lead ' + i,
+                Company = 'Company ' + i,
+                OwnerId = singleRep.Id,
+                Processed_Lead__c = false         
+            ));
+        } 
+        }      
+        insert leadList;
+        
+        // Backdate the CreatedDate to simulate inactive leads (6 days old)
+        for (Lead record : leadList) {
+            Test.setCreatedDate(record.Id, System.today().addDays(-6)); 
+        }
+    } 
+    
+// -------------------- Test 1: With Manager --------------------
+
+   @isTest
+    public static void testLeadReassignment_WithManager() {
+        // Get rep who has a manager
+        User repWithMgr = [SELECT Id, ManagerId FROM User WHERE UserName = 'rep@555test.com' LIMIT 1];
+
+        // Leads owned by this rep
+        List<Lead> leadsBefore = [SELECT Id, OwnerId, Processed_Lead__c 
+                                  FROM Lead WHERE OwnerId = :repWithMgr.Id];
+        
+        Assert.areEqual(2, leadsBefore.size(), '2 Leads for rep with manager should exist');
+        
+        // Run the batch without Param
+        Test.startTest();
+        Database.executeBatch(new LeadReassignmentBatch(), 10);
+        Test.stopTest();
+        
+        // Validate leads reassigned to the manager
+        List<Lead> leadsAfter = [SELECT Id, OwnerId, Processed_Lead__c 
+                                 FROM Lead WHERE Id IN :leadsBefore];
+        
+        for (Lead record : leadsAfter) {
+            Assert.areEqual(repWithMgr.ManagerId, record.OwnerId, 'Lead should be reassigned to the Manager');
+            Assert.areEqual(true, record.Processed_Lead__c, 'Processed_Lead__c should be true');
+        }
+        
+        // Validate 2 tasks created for those leads
+        List<Task> tasks = [SELECT Id, OwnerId, Subject, WhoId FROM Task 
+                            WHERE OwnerId = :repWithMgr.ManagerId];
+        
+        Assert.areEqual(2, tasks.size(), '2 tasks should be created for leads with manager');
+        
+        for (Task record : tasks) {
+            Assert.areEqual(repWithMgr.ManagerId, record.OwnerId, 'Task owner should be Manager');
+        }
+    } 
+    
+// -------------------- Test 2: Without Manager --------------------
+     
+    @isTest
+    public static void testLeadReassignment_NoManager() {
+        // Get rep without manager
+        User repWithoutMgr = [SELECT Id FROM User WHERE UserName = 'rep2@584test.com' LIMIT 1];
+        User defaultManager = [SELECT Id FROM User WHERE UserName = 'manager@585test.com' LIMIT 1];
+        
+        // Leads owned by rep without manager
+        List<Lead> leadsBefore = [SELECT Id, OwnerId, Processed_Lead__c 
+                                  FROM Lead WHERE OwnerId = :repWithoutMgr.Id];
+        
+        Assert.areEqual(2, leadsBefore.size(), '2 Leads for rep without manager should exist');
+        
+        // Run the batch with Param
+        Test.startTest();
+        Database.executeBatch(new LeadReassignmentBatch(defaultManager.Id), 10);
+        Test.stopTest();
+        
+        // Validate leads reassigned to default manager
+        List<Lead> leadsAfter = [SELECT Id, OwnerId, Processed_Lead__c 
+                                 FROM Lead WHERE Id IN :leadsBefore];
+        
+        for (Lead record : leadsAfter) {
+            Assert.areEqual(defaultManager.Id, record.OwnerId, 'Lead should be reassigned to Default Manager');
+            Assert.areEqual(true, record.Processed_Lead__c, 'Processed_Lead__c should be true');
+        }
+        
+        // Validate 2 tasks created for those leads
+        List<Task> tasks = [SELECT Id, OwnerId, Subject, WhoId FROM Task 
+                            WHERE OwnerId = :defaultManager.Id];
+        
+        Assert.areEqual(2, tasks.size(), '2 tasks should be created for leads with default manager');
+        
+        for (Task record : tasks) {
+            Assert.areEqual(defaultManager.Id, record.OwnerId, 'Task owner should be Manager');
+        }
+    } 
+}
