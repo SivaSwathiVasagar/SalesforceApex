@@ -1,0 +1,78 @@
+/* Author 	- svasagar
+* Date 		- 10/28/2025
+* Purpose 	- Whenever a Store record is created with Market code and Market lookup = Null,  
+*			- Store record should be mapped to lookup or create new Market record for given code	
+*/
+
+public class MarketBatch implements Database.Batchable<SObject> { 
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        // Get all stores where Zone Code is filled
+        return Database.getQueryLocator([
+            SELECT Id, Name, Market_Code__c, MarketLookup__c
+            FROM StoreBatch__c
+            WHERE Market_Code__c != Null And MarketLookup__c = Null
+        ]);
+    }
+    
+    public void execute(Database.BatchableContext bc, List<StoreBatch__c> storeList) {
+        // Collect all Market Codes from Store
+        Set<String> marketCodes = new Set<String>();
+        
+        for (StoreBatch__c record : storeList) {
+            marketCodes.add(String.valueOf(record.Market_Code__c));
+        }
+        // Get existing Markets
+        Map<String, MarketBatch__c> existingMarkets = new Map<String, MarketBatch__c>();
+        
+        for (MarketBatch__c record : [SELECT Id, Name FROM MarketBatch__c WHERE Name IN :marketCodes]) {
+            existingMarkets.put(record.Name, record);
+        }
+        
+        // Create missing Markets
+        List<MarketBatch__c> newMarkets = new List<MarketBatch__c>();
+        
+        for (String code : marketCodes) {
+            if (!existingMarkets.containsKey(code)) {
+                newMarkets.add(new MarketBatch__c(Name = code, 
+                                              Market_Description__c = 'Auto Created', 
+                                              Market_Manager__c = System.Label.ZoneDefaultOwner)); 
+            }
+        }
+        
+        // Insert New Markets record
+        try{
+            if (!newMarkets.isEmpty()) {
+                insert newMarkets;
+                for (MarketBatch__c record : newMarkets) {
+                    existingMarkets.put(record.Name, record);
+                }
+            }
+        }
+        catch(Exception e){
+            system.debug('Error Updating Market details ' + e.getMessage());
+        }
+        
+        // Update Store with Market Lookup
+        for (StoreBatch__c record : storeList) {
+            MarketBatch__c matchedMarket = existingMarkets.get(String.valueOf(record.Market_Code__c));
+            if (matchedMarket != null) {
+                system.debug('matchedMarket :' + matchedMarket);
+                record.MarketLookup__c = matchedMarket.Id;
+            }
+        }
+         // Update Store with Market Lookup
+        try{
+            if(!storeList.isEmpty()){
+                update storeList;
+            }   
+        } catch(Exception e){
+            system.debug('Error Updating Store and Market details ' + e.getMessage());
+        }
+    }
+    
+    public void finish(Database.BatchableContext bc) {
+        System.debug('Market mapping completed successfully');
+    }
+}
+
+//  Database.executeBatch(new MarketBatch(), 2);
