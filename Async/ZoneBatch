@@ -1,0 +1,83 @@
+/* Author 	- svasagar
+* Date 		- 10/27/2025
+* Purpose 	- Whenever a Store record is created with Zone code and Zone lookup = Null,  
+*			- Store record should be mapped to lookup or create new Zone record for given code	
+*/
+
+public class ZoneBatch implements Database.Batchable<SObject> {
+    
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        // Get all stores where Zone Code is filled
+        return Database.getQueryLocator([
+            SELECT Id, Name, Zone_Code__c, ZoneLookups__c
+            FROM StoreBatch__c
+            WHERE Zone_Code__c != Null And ZoneLookups__c = Null
+        ]);
+    }
+    
+    public void execute(Database.BatchableContext bc, List<StoreBatch__c> storeList) {
+        // Collect all Zone Codes from Store
+        Set<String> zoneCodes = new Set<String>();
+        
+        for (StoreBatch__c record : storeList) {
+            zoneCodes.add(String.valueOf(record.Zone_Code__c));
+        }
+        
+        // Get existing Zones
+        Map<String, ZoneBatch__c> existingZones = new Map<String, ZoneBatch__c>();
+        
+        for (ZoneBatch__c record : [SELECT Id, Name FROM ZoneBatch__c WHERE Name IN :zoneCodes]) {
+            existingZones.put(record.Name, record);
+        }
+        
+        // Create missing Zones
+        List<ZoneBatch__c> newZones = new List<ZoneBatch__c>();
+        
+        for (String code : zoneCodes) {
+            if (!existingZones.containsKey(code)) {
+                newZones.add(new ZoneBatch__c(Name = code, 
+                                              Zone_Description__c = 'Auto Created', 
+                                              Zone_Leader__c = System.Label.ZoneDefaultOwner)); 
+            }
+        }
+        //system.debug('newZones :' + newZones);
+        
+        // Insert New Zone record
+        try{
+            if (!newZones.isEmpty()) {
+                insert newZones;
+                for (ZoneBatch__c record : newZones) {
+                    existingZones.put(record.Name, record);
+                }
+            }
+        }
+        catch(Exception e){
+            system.debug('Error Updating Zone details ' + e.getMessage());
+        }
+        
+        
+        // Update Store with Zone Lookup
+        for (StoreBatch__c record : storeList) {
+            ZoneBatch__c matchedZone = existingZones.get(String.valueOf(record.Zone_Code__c));
+            if (matchedZone != null) {
+                system.debug('matchedZone :' + matchedZone);
+                record.ZoneLookups__c = matchedZone.Id;
+            }
+        }
+        
+        // Update Store with Zone Lookup
+        try{
+            if(!storeList.isEmpty()){
+                update storeList;
+            }   
+        } catch(Exception e){
+            system.debug('Error Updating Store and Zone details ' + e.getMessage());
+        }
+    }
+    
+    public void finish(Database.BatchableContext bc) {
+        System.debug('Zone mapping completed successfully');
+    }
+}
+
+//  Database.executeBatch(new ZoneBatch(), 2);
