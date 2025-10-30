@@ -1,0 +1,66 @@
+/* Author 	- svasagar
+* Date 		- 10/27/2025
+* Purpose 	- Test - Whenever a Store record is created with Zone code and Zone lookup = Null,  
+*			- Store record should be mapped to lookup or create new Zone record for given code	
+*/
+
+@isTest
+public class TestZoneBatch {
+    
+    @testSetup
+    public static void setupData() {
+        // Insert Zone
+        ZoneBatch__c existingZone = new ZoneBatch__c(
+            Name = 'Z001',
+            Zone_Description__c = 'Existing Zone',
+            Zone_Leader__c = 'Existing Leader'
+        );
+        insert existingZone;
+        
+        // Create Stores with Existing Zone & New Zone
+        List<StoreBatch__c> stores = new List<StoreBatch__c>();
+        
+        // Store that matches existing zone
+        stores.add(new StoreBatch__c(
+            Name = 'Store1',
+            Zone_Code__c = 'Z001'
+        ));
+        
+        // Store that should create New Zone
+        stores.add(new StoreBatch__c(
+            Name = 'Store2',
+            Zone_Code__c = 'Z002'
+        ));
+        
+        // Store with null Zone_Code__c
+        stores.add(new StoreBatch__c(
+            Name = 'Store3'
+        ));
+        
+        Insert stores;
+    }
+    
+    @isTest
+    public static void testZoneBatch_ZoneCreationAndMapping() {
+        // Run the batch
+        Test.startTest();
+        Database.executeBatch(new ZoneBatch(), 10);
+        Test.stopTest();
+        
+        // Verify new Zone got created for Z002
+        List<ZoneBatch__c> afterZones = [SELECT Id, Name FROM ZoneBatch__c];
+        Assert.areEqual(2, afterZones.size(), 'New Zone should be created for Zone_Code__c = Z002');
+        
+        // Verify Stores got updated with ZoneLookups__c
+        List<StoreBatch__c> updatedStores = [SELECT Id, Name, Zone_Code__c, ZoneLookups__c 
+                                             FROM StoreBatch__c 
+                                             WHERE Zone_Code__c != NULL
+                                            ];
+        
+        for (StoreBatch__c store : updatedStores) {
+            Assert.areNotEqual(Null, store.ZoneLookups__c, 
+                                   'Store ' + store.Name + ' should have ZoneLookups__c filled');
+        }
+
+    }
+}
