@@ -1,0 +1,107 @@
+@isTest(seeAllData = true)
+public class TestOppLineTriggerHandler {
+
+    // --------------------------- HELPER METHOD ---------------------------------------//
+    
+     public static List<Opportunity> loadTestData(String oppName) {
+        // Fetch existing custom Price Book from the org
+        Pricebook2 customBook = [SELECT Id, Name FROM Pricebook2 WHERE Name = 'CustomBook' LIMIT 1];
+
+        // Fetch product entries from that book
+        List<PricebookEntry> prodList = [SELECT Id, Product2Id, ProductCode 
+                                         FROM PricebookEntry 
+                                         WHERE Pricebook2Id = :customBook.Id AND IsActive = true];
+
+        // Create Opportunities
+        List<Opportunity> oppList = new List<Opportunity>();
+        for (Integer i = 0; i < 2; i++) {
+            oppList.add(new Opportunity(
+                 Name = oppName +' ' + i,
+                StageName = 'Prospecting',
+                CloseDate = Date.today()
+            ));
+        }
+        Insert oppList;
+
+        // Insert Opportunity Line Items
+        List<OpportunityLineItem> oliList = new List<OpportunityLineItem>();
+        for (Opportunity opp : oppList) {
+            for (PricebookEntry prod : prodList) {
+                oliList.add(new OpportunityLineItem(
+                    OpportunityId = opp.Id,
+                    Quantity = 1,
+                    UnitPrice = 100,
+                    PricebookEntryId = prod.Id
+                ));
+            }
+        }
+        Insert oliList;
+
+        Return oppList;
+    }
+    
+    // ---------------------------BULK TEST-INSERT-OLI --------------------------------------//
+    @isTest
+    public static void testInsertOLIs() {
+       // Call Helper 
+       List<Opportunity> oppList = loadTestData('BulkOpp');    
+       
+       // Fetch Updated Opp
+       List<Opportunity> updatedOppList = [SELECT Id, OppLineItem_Code__c 
+                                           FROM Opportunity 
+                                           WHERE Name LIKE 'BulkOpp%' LIMIT 1];
+       
+       Assert.areEqual('GC1060, GC1020, SWA001', updatedOppList[0].OppLineItem_Code__c, 'Product code did not match');
+    }
+    
+    // ---------------------------BULK TEST-DELETE-SINGLE OLI --------------------------------------//
+    @isTest
+    public static void testDeleteOLIs() {
+        // Call Helper
+        List<Opportunity> oppList = loadTestData('BulkOpp');   
+        
+        // Fetch All OLI
+        List<OpportunityLineItem> oliToDelete = [SELECT Id FROM OpportunityLineItem 
+                                                 WHERE OpportunityId = :oppList[0].Id];
+        if (!oliToDelete.isEmpty()) {
+            delete oliToDelete[0];
+        }
+        
+        // Fetch Active OLI
+        List<AggregateResult> remainingOliCounts = [SELECT Count(Id) OliCode from OpportunityLineItem 
+                                          			Where OpportunityId = :oppList[0].Id];
+        
+        Assert.areEqual(oliToDelete.size() - 1 , remainingOliCounts[0].get('OliCode'), 'OLIs count did not match after deletion');
+    }
+    
+    // ---------------------------BULK TEST-DELETE-ALL OLI --------------------------------------//
+    @isTest
+    public static void testDeleteAllOLIs() {
+        // Call Helper
+        List<Opportunity> oppList = loadTestData('BulkOpp');    
+        
+        // Fetch All OLI
+        List<OpportunityLineItem> oliToDelete = [SELECT Id FROM OpportunityLineItem 
+                                                 WHERE OpportunityId = :oppList[0].Id];
+        if (!oliToDelete.isEmpty()) {
+            delete oliToDelete;
+        }
+        
+        // Fetch OLI after Delete
+        List<OpportunityLineItem> oliAfterDelete = [SELECT Id FROM OpportunityLineItem 
+                                                    WHERE OpportunityId = :oppList[0].Id];
+        
+         // Fetch Opp after OLI Delete
+        List<Opportunity> updatedOppList = [SELECT Id, OppLineItem_Code__c 
+                                           FROM Opportunity 
+                                           WHERE Name LIKE 'BulkOpp%' LIMIT 1];
+        String OppLineCode;
+        if(!updatedOppList.isEmpty()){
+            OppLineCode = updatedOppList[0].OppLineItem_Code__c;
+        }
+        
+        Assert.areEqual(0, oliAfterDelete.size(), 'OLIs count did not match after deletion');
+        Assert.areEqual(Null, OppLineCode, 'No product code should be present after all OLI deleted');
+    }
+     
+}
