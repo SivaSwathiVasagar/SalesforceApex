@@ -1,0 +1,117 @@
+public class SlackNotifierQueueable implements Queueable, Database.AllowsCallouts {
+
+    private String message;
+    private List<String> webhookList = new List<String>();
+    private Boolean includeManagerButtons;
+    private String leaveId;
+
+    // --- Slack Webhooks ---
+    public static final String COMMON_CHANNEL_WEBHOOK =
+        'https://hooks.slack.com/services/--webhookUrl';
+
+    public static final String MANAGER_CHANNEL_WEBHOOK =
+        'https://hooks.slack.com/services/--webhookUrl';
+
+    // Common channel constructor
+    public SlackNotifierQueueable(String message) {
+        this.message = message;
+        this.includeManagerButtons = false;
+        this.leaveId = null;
+        webhookList.add(COMMON_CHANNEL_WEBHOOK);
+    }
+
+    // Manager channel constructor
+    public SlackNotifierQueueable(String message, String leaveId, Boolean showButtons) {
+        this.message = message;
+        this.includeManagerButtons = showButtons;
+        this.leaveId = leaveId;
+        webhookList.add(MANAGER_CHANNEL_WEBHOOK);
+    }
+
+    public void execute(QueueableContext context) {
+        for (String webhookUrl : webhookList) {
+            sendToWebhook(webhookUrl);
+        }
+    }
+
+    private void sendToWebhook(String webhookUrl) {
+
+        Http http = new Http();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(webhookUrl);
+        req.setMethod('POST');
+        req.setHeader('Content-Type', 'application/json');
+
+        Map<String, Object> payload = new Map<String, Object>();
+
+        // ✅ Force Slack to resolve <@USERID> mentions
+        payload.put('link_names', true);
+
+        // ✅ Manager message (with buttons + link)
+        if (includeManagerButtons) {
+
+            String baseUrl = URL.getOrgDomainUrl().toExternalForm();
+            String recordLink = '<' + baseUrl + '/' + leaveId + '|Click to view record>';
+
+            Map<String, Object> approveBtn = new Map<String, Object>{
+                'type' => 'button',
+                'text' => new Map<String, String>{'type'=>'plain_text','text'=>'Approve'},
+                'style' => 'primary',
+                'action_id' => 'approve_leave',
+                'value' => leaveId
+            };
+
+            Map<String, Object> rejectBtn = new Map<String, Object>{
+                'type' => 'button',
+                'text' => new Map<String, String>{'type'=>'plain_text','text'=>'Reject'},
+                'style' => 'danger',
+                'action_id' => 'reject_leave',
+                'value' => leaveId
+            };
+
+            List<Object> blocks = new List<Object>{
+                new Map<String, Object>{
+                    'type'=>'section',
+                    'text'=> new Map<String, Object>{
+                        'type'=>'mrkdwn',
+                        'text'=> message + '\n' + recordLink,
+                        'verbatim' => false
+                    }
+                },
+                new Map<String, Object>{
+                    'type'=>'actions',
+                    'elements'=> new List<Object>{approveBtn, rejectBtn}
+                }
+            };
+
+            payload.put('blocks', blocks);
+
+        }
+        // ✅ Common channel (mention-safe)
+        else {
+            List<Object> blocks = new List<Object>{
+                new Map<String,Object>{
+                    'type' => 'section',
+                    'text' => new Map<String,Object>{
+                        'type' => 'mrkdwn',
+                        'text' => message,
+                        'verbatim' => false
+                    }
+                }
+            };
+            payload.put('blocks', blocks);
+        }
+
+        req.setBody(JSON.serialize(payload));
+        http.send(req);
+    }
+
+    // Helpers
+    public static void sendLeaveNotification(String message) {
+        System.enqueueJob(new SlackNotifierQueueable(message));
+    }
+
+    public static void sendManagerNotification(String message, String leaveId, Boolean showButtons) {
+        System.enqueueJob(new SlackNotifierQueueable(message, leaveId, showButtons));
+    }
+}
