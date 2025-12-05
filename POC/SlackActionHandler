@@ -1,0 +1,45 @@
+@RestResource(urlMapping='/slack/actions')
+global with sharing class SlackActionHandler {
+    
+    @HttpPost
+    global static void handleSlackAction() {
+        
+        RestRequest req = RestContext.request;
+        String body = req.requestBody.toString();
+        System.debug('Slack Payload: ' + body);
+        
+        // Slack sends data in URL encoded format
+        
+        String decoded = EncodingUtil.urlDecode(body, 'UTF-8');
+        
+        String json = decoded.substringAfter('payload=');
+        
+        Map<String, Object> data =
+            (Map<String, Object>) System.JSON.deserializeUntyped(json);
+        
+        // Button Value (Approve / Reject)
+        List<Object> actions = (List<Object>) data.get('actions');
+        Map<String, Object> action = (Map<String, Object>) actions[0];
+        
+        String actionValue = (String) action.get('value');
+        
+        // Record Id stored in button's block_id
+        Map<String, Object> message = (Map<String, Object>) data.get('message');
+        String recordId = (String) message.get('block_id');
+        
+        // Update Salesforce Record
+        Leave_Request__c lr = [
+            SELECT Id, Status__c FROM Leave_Request__c WHERE Id = :recordId LIMIT 1
+        ];
+        
+        if(actionValue == 'approve') {
+            lr.Status__c = 'Approved';
+        } else if(actionValue == 'reject') {
+            lr.Status__c = 'Rejected';
+        }
+        
+        update lr;
+    }
+}
+
+//https://orgfarm-d8c948e9bf-dev-ed.develop.my.site.com/DigiKas
