@@ -1,0 +1,104 @@
+trigger LeaveRequestTrigger on Leave_Request__c (after insert, after update) {
+
+    Set<Id> empIds = new Set<Id>();
+    Set<Id> leaveTypeIds = new Set<Id>();
+
+    for (Leave_Request__c lr : Trigger.new) {
+        if (lr.Employee_Name__c != null) empIds.add(lr.Employee_Name__c);
+        if (lr.Leave_Type__c != null) leaveTypeIds.add(lr.Leave_Type__c);
+    }
+
+    Map<Id, Employee__c> empMap = new Map<Id, Employee__c>(
+        [SELECT Id, Name, Employee_Id__c, Slack_Id__c
+         FROM Employee__c
+         WHERE Id IN :empIds]
+    );
+
+    Map<Id, Leave_Type__c> leaveMap = new Map<Id, Leave_Type__c>(
+        [SELECT Id, Name FROM Leave_Type__c WHERE Id IN :leaveTypeIds]
+    );
+
+    Slack_Settings__mdt settings = [
+        SELECT Manager_Slack_Id__c
+        FROM Slack_Settings__mdt
+        WHERE DeveloperName = 'Main'
+        LIMIT 1
+    ];
+
+    String managerMention = !String.isBlank(settings.Manager_Slack_Id__c)
+        ? '<@' + settings.Manager_Slack_Id__c.trim() + '>'
+        : 'Manager';
+
+    for (Leave_Request__c lr : Trigger.new) {
+
+        Employee__c emp = empMap.get(lr.Employee_Name__c);
+
+        // ✅ Employee mention logic
+        String empMention;
+        if (emp != null && !String.isBlank(emp.Slack_Id__c)) {
+            empMention = '<@' + emp.Slack_Id__c.trim() + '>';
+        } else {
+            empMention = (emp != null ? emp.Name : 'Unknown Employee');
+        }
+
+        String empId = emp != null ? emp.Employee_Id__c : 'N/A';
+
+        String leaveType = leaveMap.containsKey(lr.Leave_Type__c)
+            ? leaveMap.get(lr.Leave_Type__c).Name
+            : 'N/A';
+
+        String startDate = lr.Start_Date__c != null ? lr.Start_Date__c.format() : 'N/A';
+        String endDate   = lr.End_Date__c != null ? lr.End_Date__c.format() : 'N/A';
+
+        String msg = '';
+
+        // --- INSERT (Submitted) ---
+        if (Trigger.isInsert && lr.Status__c == 'Submitted') {
+            msg =
+                'Hi ' + managerMention + ', please act on this leave request\n\n' +
+                '*🔔 New Leave Request Submitted!*\n' + '\n' +
+                '👩‍💻 *Employee :* ' + empMention + '\n' +
+                '🆔 *Employee ID :* ' + empId + '\n' +
+                '📆 *Start Date :* ' + startDate + '\n' +
+                '📆 *End Date :* ' + endDate + '\n' +
+                '🤔 *Leave Type :* ' + leaveType + '\n' + '\n' +
+                '⏳ *STATUS :* ' + lr.Status__c;
+            	
+        }
+
+        // --- UPDATE (Approved/Rejected) ---
+        if (Trigger.isUpdate) {
+            Leave_Request__c oldLR = Trigger.oldMap.get(lr.Id);
+
+            if (oldLR.Status__c != 'Approved' && lr.Status__c == 'Approved') {
+                msg =
+                    '*✅ Leave Request Approved*\n' + '\n' +
+                    '👩‍💻 *Employee :* ' + empMention + '\n' +
+                    '🆔 *Employee ID :* ' + empId + '\n' +
+                    '📆 *Start Date :* ' + startDate + '\n' +
+                    '📆 *End Date :* ' + endDate + '\n' +
+                    '🤔 *Leave Type :* ' + leaveType + '\n' + '\n' +
+                    '⏳ *STATUS :* ' + lr.Status__c;
+            }
+
+            if (oldLR.Status__c != 'Rejected' && lr.Status__c == 'Rejected') {
+                msg =
+                    '*❌ Leave Request Rejected*\n' + '\n' +
+                    '👩‍💻 *Employee :* ' + empMention + '\n' +
+                    '🆔 *Employee ID :* ' + empId + '\n' +
+                    '📆 *Start Date :* ' + startDate + '\n' +
+                    '📆 *End Date :* ' + endDate + '\n' +
+                    '🤔 *Leave Type :* ' + leaveType + '\n' + '\n' +
+                    '⏳ *STATUS :* ' + lr.Status__c;
+            }
+        }
+
+        if (!String.isBlank(msg)) {
+            Boolean showButtons = (Trigger.isInsert && lr.Status__c == 'Submitted');
+
+            // Send to Slack
+            SlackNotifierQueueable.sendLeaveNotification(msg);
+            SlackNotifierQueueable.sendManagerNotification(msg, lr.Id, showButtons);
+        }
+    }
+}
