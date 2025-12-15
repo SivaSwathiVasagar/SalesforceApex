@@ -1,0 +1,26 @@
+<template>
+    <lightning-card title="Wire Adaptor ">
+
+        <!-- Account Section -->
+        <div class="slds-m-around_medium">
+            <template if:true={accountRecordData}>
+                <p> Name : {accountRecordData.Name.value} </p>
+                <p> AnnualRevenue : {accountRecordData.AnnualRevenue.value} </p>
+                <p> Address : {accountRecordData.BillingCity.value} </p>
+                <p> {accountRecordData.BillingStreet.value} </p>
+                <p> {accountRecordData.BillingState.value} </p>
+                <p> {accountRecordData.BillingCountry.value} </p>
+                <p> {accountRecordData.BillingPostalCode.value} </p>
+            </template>
+        </div>
+
+        <!-- User Section -->
+        <div class="slds-m-around_medium">
+            <template if:true={userRecordData}>
+                <p><b>User Record Details</b></p>
+                <p> Name : {userRecordData.Name.value} </p>
+            </template>
+        </div>
+
+    </lightning-card>
+</template>

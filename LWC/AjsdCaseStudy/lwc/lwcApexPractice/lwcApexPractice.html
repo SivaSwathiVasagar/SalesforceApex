@@ -1,0 +1,37 @@
+<template>
+    <lightning-card title="LWC and Apex - Imperative">
+        <div class="slds-p-around_medium">
+            <p class="slds-text-heading_small">Account - Apec - LWC</p>
+            <!-- <template if:true={accountFromApex}>
+                    <template for:each = {accountFromApex} for:item = 'account'>
+                        <div class="slds-box slds-var-around_small" key = {account.Id}>
+                            <p>Name: {account.Name}</p>
+                            <p>Annual Revenue: {account.AnnualRevenue}</p>
+                            <p>Rating: {account.Rating}</p>
+                            <div class="slds-p-around_medium">
+                             <lightning-button  label="Delete" variant="brand" name={account.Id} onclick={handleDeleteClick}></lightning-button>  
+                        </div>   
+                        </div>        
+                    </template>
+                    </template> -->
+
+            <!-- <lightning-combobox name="industry" label=" Choose Industry " value={value}
+                        options={picklistIndustry} onchange={handleChange}>
+                    </lightning-combobox> -->
+
+            <lightning-button label="Get Account Records" name="GetAccounts"
+                onclick={handleGetRecord}></lightning-button>
+                 <p class="slds-text-heading_small">
+            <template if:true={display}>
+                <lightning-datatable key-field="Id" data={accountFromApex} columns={columns} onrowaction={handleRowAction}></lightning-datatable>
+            </template>
+            </p>
+            
+            <p class="slds-text-heading_small">
+            <template if:false={display}>
+                <p>No Records Found</p>
+            </template>
+            </p>
+        </div>
+    </lightning-card>
+</template>

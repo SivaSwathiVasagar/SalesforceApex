@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="Parent Timer Bar">
+        <div class="slds-m-around_medium slds-grid">
+
+            <template if:true={showStart}>
+                <lightning-button class="slds-col" variant="brand" 
+                                  label="Start Timer"
+                                  onclick={handleStart}></lightning-button>
+            </template>
+
+            <template if:false={showStart}>
+                <lightning-button class="slds-col" variant="destructive" 
+                                  label="Stop Timer"
+                                  onclick={handleStop}></lightning-button>
+            </template>
+
+            <lightning-button class="slds-col" variant="success"
+                              label="Reset Timer"
+                              onclick={handleReset}></lightning-button>
+
+        </div>
+
+        <c-timer-clock-child lwc:ref="child"></c-timer-clock-child>
+    </lightning-card>
+</template>

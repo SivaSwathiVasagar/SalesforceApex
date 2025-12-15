@@ -1,0 +1,24 @@
+<template>
+    <lightning-card title="Contacts Related to Account">
+
+        <!-- When contacts exist -->
+        <template if:true={hasContacts}>
+            <template for:each={contacts} for:item="con">
+
+                <div key={con.id} class="slds-m-around_small">
+                    <p><b>Name:</b> {con.fields.FirstName.value} {con.fields.LastName.value}</p>
+                    <p><b>Email:</b> {con.fields.Email.value}</p>
+                    <p><b>Phone:</b> {con.fields.Phone.value}</p>
+                    <hr/>
+                </div>
+
+            </template>
+        </template>
+
+        <!-- When no contacts -->
+        <template if:false={hasContacts}>
+            <p class="slds-m-around_medium">No Contacts Found</p>
+        </template>
+
+    </lightning-card>
+</template>

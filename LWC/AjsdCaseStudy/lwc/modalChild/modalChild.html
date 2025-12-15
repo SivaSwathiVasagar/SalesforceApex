@@ -1,0 +1,28 @@
+<template>
+    <template if:true={showMonuments}>
+    <div class="slds-grid slds-wrap slds-gutters">
+
+        <template for:each={monuments} for:item="m">
+
+            <div key={m.id} class="slds-col slds-size_1-of-2 slds-p-around_small">
+                <div class="slds-box slds-text-align_center tile-box">
+                    <img src={m.img} alt={m.name} class="tile-image" />
+                    <h3 class="slds-text-heading_small slds-m-top_small">{m.name}</h3>
+                    <p class="slds-text-body_small slds-m-bottom_small">{m.description}</p>
+                    <lightning-input type="checkbox" label="Select" data-name={m.name} onchange={handleCheckbox}>
+                    </lightning-input>
+                </div>
+
+            </div>
+
+        </template>
+
+        <!--  Close Button -->
+        <div class="slds-m-around_medium slds-text-align_right">
+            <lightning-button variant="neutral" label="Close" onclick={closeTiles}>
+            </lightning-button>
+        </div>
+
+    </div>
+    </template>
+</template>

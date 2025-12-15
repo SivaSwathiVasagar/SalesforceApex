@@ -1,0 +1,27 @@
+<template>
+    <!-- Blood donor Record detail page -->
+    <lightning-card title="Lightning View Form on record Detail DIY">
+        <div class="slds-m-around_medium">
+            <lightning-record-view-form 
+            object-api-name={objectApiName} 
+            record-id={recordId}>
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-output-field field-name={name}></lightning-output-field>
+                        <lightning-output-field field-name={age}></lightning-output-field>   
+                    </div>
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-output-field field-name={bloodType}></lightning-output-field>
+                        <lightning-output-field field-name={daysSince}></lightning-output-field>
+                    </div>
+                    <div class="slds-col slds-size_4-of-12">
+                        <lightning-output-field field-name={state}></lightning-output-field>
+                        <lightning-output-field field-name={eligible}></lightning-output-field>
+                    </div>
+                </div>
+
+            </lightning-record-view-form>
+
+        </div>
+    </lightning-card>
+</template>

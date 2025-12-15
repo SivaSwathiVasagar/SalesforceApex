@@ -1,0 +1,63 @@
+<template>
+    <lightning-card title="Contact - Account Lookup">
+        <div class="slds-m-around_medium">
+
+            <lightning-record-edit-form object-api-name={objectApi} record-id={recordId} onsubmit={handleSubmit}
+                onsuccess={handleSuccess}>
+
+                <div class="slds-grid slds-gutters">
+
+                    <!-- Read-only -->
+                    <div class="slds-col slds-size_6-of-12">
+                        <lightning-output-field field-name={lastName}></lightning-output-field>
+                    </div>
+
+                    <!-- Account Lookup -->
+                    <div class="slds-col slds-size_6-of-12">
+                        <lightning-input-field field-name={accountId}></lightning-input-field>
+                    </div>
+
+                </div>
+                <!-- Save Button -->
+                <lightning-button class="slds-m-around_medium" variant="brand" type="submit" label="Save">
+                </lightning-button>
+                
+                <!-- Cancel Button -->
+                <lightning-button class="slds-m-around_medium" variant="neutral" type="reset" label="Cancel" onclick={handleCancel}>
+                </lightning-button>
+
+            </lightning-record-edit-form>
+
+            <div class="slds-var-m-around_medium">
+
+                <!-- Address exists -->
+                <template lwc:if={hasBillingAddress}>
+                    <strong>Account Billing Address</strong>
+                    <p>
+                        {billingAddress.BillingStreet}
+                        {billingAddress.BillingCity}
+                        {billingAddress.BillingPostalCode}
+                    </p>
+                    <p>
+                        {billingAddress.BillingState}
+                        {billingAddress.BillingCountry}
+                    </p>
+                </template>
+
+                <!-- Account selected with no address -->
+                <template lwc:elseif={accountSelectedButNoAddress}>
+                    <p>Chosen Account does not have a billing address.</p>
+                </template>
+
+                <!-- Displayed before fetching -->
+                <template lwc:else>
+                    <template if:false={accountSelectedButNoAddress}>
+                        <p>Please choose an Account - Billing Address will be loaded.</p>
+                    </template>
+                </template>
+
+            </div>
+
+        </div>
+    </lightning-card>
+</template>

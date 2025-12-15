@@ -1,0 +1,30 @@
+<template>
+    <lightning-card title="Indian Monuments">
+
+        <div class="slds-m-around_medium">
+            <lightning-button label="Show Monuments"
+                              variant="brand"
+                              onclick={handleShow}>
+            </lightning-button>
+        </div>
+
+         <!-- Selected Items -->
+        <template if:true={selectedNames.length}>
+            <p class="slds-m-around_medium">You have selected:</p>
+
+            <template for:each={selectedNames} for:item="item">
+                <p class="slds-m-around_medium" key={item}><strong>{item}</strong></p>
+            </template>
+        </template>
+
+        <!-- Show Tiles -->
+        <template if:true={showMonuments}>
+            <c-modal-child 
+                monuments={monuments} 
+                onselectionchange={handleSelection} 
+                selected={selectedNames}>
+            </c-modal-child>
+        </template>
+
+    </lightning-card>
+</template>

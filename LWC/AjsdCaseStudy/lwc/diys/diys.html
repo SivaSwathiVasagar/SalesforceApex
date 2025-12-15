@@ -1,0 +1,54 @@
+<template>
+    <lightning-card title="Login Portal with CheckBox Group">
+        <div class="cardStyle">
+            <h2>Choose an option</h2>
+
+            <!-- Checkbox Group -->
+
+            <lightning-checkbox-group name="mainOptions" options={options} value={selected}
+                onchange={handleCheckChange}>
+            </lightning-checkbox-group>
+        </div>
+
+        <!-- LOGIN SECTION -->
+        <template if:true={showLogin}>
+            <h3>Login Credentials</h3>
+            <div class="cardStyle">
+                <lightning-input label="Username" value={username} onchange={handleUsername}></lightning-input>
+                <lightning-input type="password" label="Password" value={password}
+                    onchange={handlePassword}></lightning-input>
+            </div>
+            <div class="cardStyle">
+            <lightning-button label="Login" variant="brand" onclick={handleLogin}></lightning-button>
+            </div>
+
+            <!-- Invalid Password Message -->
+            <template if:true={showInvalidPassword}>
+                <div class="cardStyle">
+                    <p style="color:red;">Invalid Password attempt</p>
+                </div>
+            </template>
+        </template>
+
+        <!-- NEW MEMBER SECTION -->
+        <template if:true={showRegister}>
+
+            <h3>New Member Sign-In</h3>
+            <div class="cardStyle">
+                <lightning-input type="text" label="Name" value={name} onchange={handleName}></lightning-input>
+                <lightning-input type="email" label="Email" value={email} onchange={handleEmail}></lightning-input>
+            </div>
+
+            <!-- Missing fields message -->
+            <template if:true={missingFields}>
+                <div class="cardStyle"></div>
+                <p style="color:red;">Please enter both UserName and Email for successful Registration</p>
+                </div>
+            </template>
+
+            <div class="cardStyle">
+                <lightning-button label="Register" variant="brand" onclick={handleRegister}></lightning-button>
+            </div>
+        </template>
+    </lightning-card>
+</template>

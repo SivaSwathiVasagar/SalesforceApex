@@ -1,0 +1,44 @@
+<template>
+    <lightning-card title="Wire Concept for Get Pick list Values">
+        <!-- <div class="slds-m-around_medium">
+            <p> Account Type</p>
+            <template if:true={picklistValues}>
+                <template for:each={picklistValues} for:item='picklistValue'>
+                    <p key={picklistValue.value}>{picklistValue.label}</p>
+                </template>
+            </template>
+
+            <div class="slds-m-around_medium">
+                <p> Account Industry </p>
+                <template if:true={picklistIndustry}>
+                <template for:each={picklistIndustry} for:item='industry'>
+                    <p key={industry.value}>{industry.label}</p>
+                </template>
+            </template>            
+            </div>
+        </div> -->
+        
+         <!-- Combo box is picklist display -->
+
+         <div class="slds-m-around_medium">
+            <p> Account Type</p>
+                <template if:true={picklistValues}>
+                    <lightning-combobox name="industry" label=" Choose Type "
+                        options={picklistValues} >
+                    </lightning-combobox>
+                </template>
+        </div>
+        <div class="slds-m-around_medium">
+                <p> Account Industry </p>
+                <template if:true={picklistIndustry}>
+                    <lightning-combobox name="industry" label=" Choose Industry " value={value}
+                        options={picklistIndustry} onchange={handleChange}>
+                    </lightning-combobox>
+                </template>
+                <p>Selected value is: {value}</p>
+        </div>
+        <div class="slds-m-around_medium">
+            <lightning-button label="Get All Picklist inside Account" onclick={handleClick}></lightning-button>
+        </div>
+    </lightning-card>
+</template>
