@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="Conditional Rendering" icon-name="custom:custom14">
+        <div class="textDecor">
+            <p>
+                This is a simple example to demonstrate conditional rendering.
+            </p>
+            <p>
+                Curious to see what happens when age changes to 18 or more ?
+            </p>
+        </div>
+        <!-- Default/basic -->
+        <div class="slds-p-around_medium lgc-bg">
+            <lightning-input type="number" label="Enter Diff Age" onchange={handleAgeChange}
+                value={age}></lightning-input>
+        </div>
+
+        <template if:true={isAdult}>
+            <p class="textDecor">You are eligible ✅</p>
+        </template>
+
+        <template if:false={isAdult}>
+            <p class="textDecor">You are not eligible ❌</p>
+        </template>
+    </lightning-card>
+</template>

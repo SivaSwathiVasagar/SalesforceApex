@@ -1,0 +1,30 @@
+public abstract class BankCalculationDay12 { 
+    public String name;
+    public Integer phone;
+    // Assign bank balance using custom label -by default it returns a string type
+    public Integer Bank_Banlance = Integer.valueOf(System.Label.Bank_Banlance);
+    
+    public BankCalculationDay12(String accountHolderName, Integer contactNum){
+        name = accountHolderName;
+        phone = contactNum;     
+    }
+    
+/*
+ *   	public virtual void deposit(Integer depositAmount)
+ 		{
+		System.debug('Only for deposit');
+		}
+		public virtual void withdraw(Integer withdrawAmount)
+		{
+		System.debug('Only for withdraw');
+		} 
+*/
+}
+
+
+/*
+BankDepositDay12 credit = new BankDepositDay12('Siv', 1234);
+credit.deposit(500);
+BankWithdrawDay12 debit  = new BankWithdrawDay12('Swa', 1234);
+debit.withdraw(600);
+*/

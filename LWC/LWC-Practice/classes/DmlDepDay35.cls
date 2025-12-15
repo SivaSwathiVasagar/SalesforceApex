@@ -1,0 +1,101 @@
+public class DmlDepDay35 {
+    
+    Public static Boolean checkDepNameLoc(String DepName, String Head_Quarters){
+        //  Check Name
+        if(String.isBlank(DepName) && String.isBlank(Head_Quarters)) {
+            System.debug('Department Name & Position is required');
+            return false;
+        }
+        return True;        
+    }
+    
+        // Check employee already exists
+    Public static List<DmlDeps__c> DepartmentList(String DepName){
+       						return  	[SELECT Id, Name, Head_Quarters__c 
+                                        FROM DmlDeps__c 
+                                        WHERE Name = :DepName
+                                        ];
+    }
+    
+    public static void insertDep(String DepName, String Location){
+        // List to Insert Finally
+        List<DmlDeps__c> insertDepList = new List<DmlDeps__c>();
+        
+       // 1 Validate Name
+        if (!checkDepNameLoc(DepName, Location)) {
+            return;
+        }
+        
+        
+        // Check for existing Dep record
+        List<DmlDeps__c> DepartmentList = DepartmentList(DepName);
+        if(!DepartmentList.isEmpty())
+        {
+            System.debug('Department exist');
+        }
+        else{
+            DmlDeps__c newdep = new DmlDeps__c();
+            newdep.Name = DepName;
+            newdep.Head_Quarters__c = Location;
+            insertDepList.add(newdep);
+        }
+        
+        // Insert dep
+        if(!insertDepList.isEmpty()){
+            insert insertDepList;
+            System.debug('New Department Created : ' + insertDepList);
+        }
+        else{
+            system.debug('No New Department Created');
+        }
+    }
+    
+    public static void deleteDep(String DepName, String Location){
+        
+         // 1 Validate Name
+        if (!checkDepNameLoc(DepName, Location)) {
+            return;
+        }
+           // List to Delete Finally
+           List<DmlDeps__c> deleteDepList = new List<DmlDeps__c>();
+           
+          // Find Dep from Org 
+           List<DmlDeps__c> depList = DepartmentList(DepName);
+        
+           if(!depList.isEmpty())
+           {
+               delete depList;
+               system.debug('Department Deleted : ' + depList);
+               system.debug('No of Dep Deleted : ' + depList.size() );
+           }
+           else{
+               System.debug('Department not found');
+           }   
+     }
+    
+    // Update Emp Count
+    Public Static void findEmp(){
+        List<DmlDeps__c> updateList = new List<DmlDeps__c>();
+        List<Aggregateresult> findEmpCountByDep = [Select Count(Id) Emp, Deps__c from Emp__c Group by Deps__c];
+        for(Aggregateresult dep: findEmpCountByDep){
+            Integer count = (Integer)dep.get('Emp');
+            Id depId = (Id)dep.get('Deps__c'); 
+           
+            if(depId != Null){   // when emp is not mapped to dept - runtime exception
+                DmlDeps__c depToUpdate = new DmlDeps__c();
+                depToUpdate.Id = depId;
+                depToUpdate.EmpCount__c = count;
+                updateList.add(depToUpdate);
+            }
+        }
+        if(!updateList.isEmpty())
+           {
+               Update updateList;
+               system.debug('Department Updated : ' + updateList);
+               system.debug('No of Emp Count is Updated : ' + updateList.size() );
+           }
+           else{
+               System.debug(' Emp Count is not Upadated');
+           }   
+    }         
+}

@@ -1,0 +1,34 @@
+
+.Contactme{
+  padding: 10px;
+  margin: 50px;
+  /* margin-left: 20px; */
+  text-align:left ;
+  line-height: 1.3rem;
+  color: black;
+  /*background-image: url('/resources/CS1BG'); 
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover; */
+}
+.Contactme a {
+  color: #6f1d1b;
+}
+.Contactme a:visited{
+  color: #432818;
+  background-color: transparent;
+}
+.Contactme a:hover{
+  color: #023e8a;
+  background-color: transparent;
+  text-decoration: underline;
+}
+.Contactme a:active {
+  color: rgba(17, 17, 17, 0.82);
+  background-color: transparent;
+  text-decoration: underline;
+}
+.Contactme .ULtag{
+  list-style-type: none;
+}

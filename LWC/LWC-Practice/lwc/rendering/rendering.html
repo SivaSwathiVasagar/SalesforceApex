@@ -1,0 +1,10 @@
+<template>
+    <lightning-card title="Rendering" icon-name="custom:custom14">
+        <p style="padding: 10px;">Current Name: {user.name}</p>
+        <p style="padding: 10px;">Current Age: {user.age}</p>
+        <div class="slds-p-around_medium lgc-bg">
+        <lightning-input onchange={handleNameChange} label="Change Name"></lightning-input>
+        <lightning-input onchange={handleAgeChange} label="Change Age"></lightning-input>
+        </div>
+    </lightning-card>
+</template>

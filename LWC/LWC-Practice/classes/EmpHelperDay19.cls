@@ -1,0 +1,158 @@
+/**
+* Author: 	svasagar
+* Date  : 	08/18/2025
+* Purpose: Created this cls for learning map, inputing list as value for map using EmployeeDay19.
+*/
+public class EmpHelperDay19 {
+    Public Map<String, List<EmployeeDay19>> empMap; // Map with key as Dept
+    Map<String, List<EmployeeDay19>> empMapbyRole = new Map<String, List<EmployeeDay19>>();  // Map with key as Role
+    
+    Public EmpHelperDay19(Map<String, List<EmployeeDay19>> empMap){
+        this.empMap = empMap;
+        //system.debug(empMap);
+    }
+    
+    // Find num of emp at specific dept
+    public void findNoOfEmp(String dept){
+        Integer NumberOfEmp;
+        if(empMap.containsKey(dept)){
+            List<EmployeeDay19> empList  = empMap.get(dept);
+            system.debug('Number of Employees at ' + dept + ' :: ' + empList.size());
+        }
+        else
+        {
+            system.debug('No such specified Department available');
+        }      
+    }
+    
+    // Find min salary emp among all
+    public void minSalaryEmp(){
+        Integer minSalary;  				   
+        EmployeeDay19 minEmp;                  // to store who has min salary
+        if(!empMap.isEmpty()){
+            for (String dept : empMap.keySet()) {
+                for (EmployeeDay19 emp : empMap.get(dept)) {
+                    if (minEmp == null || emp.pay < minSalary) {
+                        minSalary = emp.pay;
+                        minEmp = emp;
+                    }
+                }
+            } system.debug('The least Salaried Employee :: '+ minEmp.name); 
+        }
+        else{
+            system.debug('Empty Map');
+        }   
+    }
+    
+    // Find num of emp at specific location
+    public void searchEmpByLocation(String location){
+        Integer count = 0;
+        for(List<EmployeeDay19> empList :empMap.values()){
+            for(EmployeeDay19 emp: empList){
+                if(emp.loc == location){
+                    count++;
+                }
+            }  
+        }system.debug('Employees working at '+ location + ' :: ' + count); 
+    }
+    
+    // Add vales to map with role as key by traversing original map
+    Public void changeMapKey(){
+        for(List<EmployeeDay19> empList : empMap.values()){
+            for(EmployeeDay19 emp : empList){
+                if(!empMapbyRole.containsKey(emp.post)){
+                    empMapByRole.put(emp.post, new List<EmployeeDay19>());
+                }
+                empMapbyRole.get(emp.post).add(emp);        
+            }
+        }maxSalaryByRole();
+    }
+    
+    // Find Max salary emp for each Role
+    Private void maxSalaryByRole() {
+        if(!empMap.isEmpty())
+        {
+            for (String role : empMapbyRole.keySet()) {
+                Integer maxSalary = 0;
+                EmployeeDay19 maxEmp;
+                
+                for (EmployeeDay19 emp : empMapbyRole.get(role)) {
+                    if (maxEmp == null || emp.pay > maxSalary) {
+                        maxSalary = emp.pay;
+                        maxEmp = emp;
+                    }
+                }
+                System.debug(role + ' - The Max Salaried Employee :: ' + maxEmp.name);
+            }}
+        else{
+            System.debug('Empty Map');
+        }
+    }
+    public void SalaryEmp(){
+        integer leastsalary;
+        EmployeeDay19 leastemp;
+        for(List<EmployeeDay19> e:empMap.values()){
+             leastsalary = e[0].pay;
+            // system.debug('leastsalary :: ' + leastsalary);
+            for(EmployeeDay19 c: e){
+                system.debug(leastsalary >= c.pay);
+                if(leastsalary > c.pay){
+                    leastsalary = c.pay;
+                    leastemp = c;
+                    system.debug(c.pay);
+                }
+                
+            }system.debug('leastsalary :: ' + leastsalary); 
+        }
+        
+                  
+    }
+}
+
+
+//-------------------------------//
+/*   public void maxSalaryByRoleUser(String inputRole) {
+if (!empMapByRole.containsKey(inputRole)) {
+System.debug('Role not found: ' + inputRole);
+return;
+}
+
+EmployeeDay19 maxEmp;
+Integer maxSalary = 0; 
+for (EmployeeDay19 emp : empMapByRole.get(inputRole)) {
+if (maxEmp == null || emp.pay > maxSalary) {
+maxSalary = emp.pay;
+maxEmp = emp;
+}
+}
+if (maxEmp != null) {
+System.debug('Role: ' + inputRole + 
+' | Max Salary Employee: ' + maxEmp.name + 
+' | Salary: ' + maxEmp.pay);
+}
+}
+}
+
+
+
+Map<String, List<EmployeeDay19>> employeeMap = new Map<String, List<EmployeeDay19>>{
+'IT' => new List<EmployeeDay19>{
+new EmployeeDay19('IT', 'New York', 101, 'Swathi', 5000, 'Developer'),
+new EmployeeDay19('IT', 'New York', 104, 'Shiva', 6000, 'Analyst')
+},
+'HR' => new List<EmployeeDay19>{
+new EmployeeDay19('HR', 'Chicago', 102, 'John', 4500, 'Recruiter')
+},
+'Finance' => new List<EmployeeDay19>{
+new EmployeeDay19('Finance', 'Boston', 103, 'Priya', 6000, 'Developer')
+}
+};
+Map<String, List<EmployeeDay19>> employeeMap = new Map<String, List<EmployeeDay19>>();
+EmpHelperDay19 obj = new EmpHelperDay19(employeeMap);
+obj.findNoOfEmp('IT');
+obj.minSalaryEmp();
+obj.searchEmpByLocation('Boston');
+obj.changeMapKey();
+obj.maxSalaryByRole();
+
+*/

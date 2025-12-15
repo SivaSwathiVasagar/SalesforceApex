@@ -1,0 +1,19 @@
+<template>
+    <lightning-card title="Parent Composition-Tab">
+        <div class="slds-m-around_medium">
+            <div class="slds-p-around_medium">I am from Parent</div>
+            <!-- Child Component & kebab case-->
+            <lightning-tabset variant="scoped">
+                <lightning-tab label="Child Comp">
+                     <c-child-composition></c-child-composition>
+                </lightning-tab>
+                <lightning-tab label="Template Looping">
+                   <c-template-looping></c-template-looping>
+                </lightning-tab>
+                <lightning-tab label="To Do List">
+                    <c-to-do-list></c-to-do-list>
+                </lightning-tab>
+            </lightning-tabset>
+        </div>
+    </lightning-card>
+</template>

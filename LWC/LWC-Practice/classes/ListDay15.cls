@@ -1,0 +1,60 @@
+public class ListDay15 {
+    public List<Integer> numbersList = new List<Integer>{1,6,3,10,5,-4};
+    public List<Integer> reversedList = new List<Integer>();
+    public List<Integer> oddList = new List<Integer>();
+    public List<Integer> evenList = new List<Integer>();
+    
+    // Sort in ascending      
+    public void displaySortedList(){
+        numbersList.sort();
+        system.debug(' Sorted List :: ' + numbersList);
+        // Integer maxNum = numbersList.size() - 1;
+        // system.debug('big list' + numbersList[maxNum]);
+    }
+    
+    // Reverse the sorted list      
+    public void displayReversedList (){
+        displaySortedList();
+        for( Integer num = numbersList.size() - 1; num >= 0; num--){
+            reversedList.add(numbersList.get(num));
+            //reversedList.add(num);
+        }
+        system.debug(' Reversed List :: ' + reversedList);
+        system.debug(' Biggest number in the List :: ' + reversedList[0]);     
+    }
+    // To find ODD & EVEN
+    public void displayOddEven(){
+        for(Integer num: numbersList){
+            if( Math.mod(num , 2) != 0) {
+                oddList.add(num);
+            } 
+            else{
+                evenList.add(num);
+            }      
+        }
+        system.debug(' Even List :: ' + evenList);
+        system.debug(' Odd List :: ' + oddList);
+    }
+    
+    // To find -ve num in the list
+    public void findNegativeNum(){
+        List<Integer> negativeList = new List<Integer>();
+        for (Integer num : numbersList) 
+        {
+          if (num < 0) 
+          { 
+            negativeList.add(num);
+          }
+        }
+        System.debug(' Negative number in the list :: '+ negativeList);
+        System.debug(' Count of -ve number in the list :: ' + negativeList.size() );
+    }
+}
+
+
+/*
+ListDay15 intList = new ListDay15();
+intList.displayReversedList();
+intList.displayOddEven();
+intList.findNegativeNum();
+*/

@@ -1,0 +1,36 @@
+<template>
+    <lightning-card title="Template Iterator with Grid">
+        <div class="slds-p-around_medium">
+            <template iterator:it={employees}>
+                <div key={it.value.id} class="slds-grid slds-gutters slds-wrap slds-p-around_small">
+
+                    <!-- First Employee Banner -->
+                    <template if:true={it.first}>
+                        <div
+                            class="slds-box slds-theme_shade slds-theme_info slds-text-align_center slds-m-bottom_small slds-size_1-of-1">
+                            List of employee!
+                        </div>
+                    </template>
+
+                    <!-- Employee Data in Columns -->
+                    
+                        <div class="slds-col slds-box  slds-box_xx-small slds-size_1-of-2 slds-text-title_bold slds-text-align_left">
+                            {it.value.Name}
+                        </div>
+                        <div class="slds-col slds-box  slds-box_xx-small slds-size_1-of-2 slds-text-align_left">
+                            {it.value.Role}
+                        </div>
+                 
+
+                    <!-- Last Employee Banner -->
+                    <template if:true={it.last}>
+                        <div class="slds-text-color_weak slds-text-align_center slds-m-top_small slds-size_1-of-1">
+                            Thanks
+                        </div>
+                    </template>
+
+                </div>
+            </template>
+        </div>
+    </lightning-card>
+</template>

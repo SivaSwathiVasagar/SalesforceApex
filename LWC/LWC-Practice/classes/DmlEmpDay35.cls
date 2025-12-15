@@ -1,0 +1,259 @@
+public class DmlEmpDay35 {
+    public static Integer Salry_Condition = Integer.valueOf(System.Label.Salry_Condition);
+    
+    Public static Boolean isEmpNameBlank(String empName){   
+        //  Check Name
+        if (String.isBlank(empName)) {
+            System.debug(' Employee Name is Required');
+            return false;
+        }
+        return True;        
+    }
+    
+    Public static Boolean isValidSalary(String empPosition, Integer empSalary){
+        // Check Salary
+        if (empSalary == null || empSalary < 0) {
+            System.debug('Invalid salary type');
+            return false;
+        }
+        if (empPosition != 'Head' && empSalary >= Salry_Condition) {
+            System.debug(' Salary exceeds 80,000 for non-Head position. Record not Inserted/Updated.');
+            return false;
+        }
+        return True;     
+    }
+    
+    // Check Position
+    Public static String checkPosition(String empPosition){
+        if (String.isBlank(empPosition)) {
+            empPosition = 'Other';
+            return 'Other';
+        }
+        return empPosition;
+    }
+    // Check if Position Exists
+    public static Boolean isEmpPositionExist(String empPosition){
+        Integer countPos = [SELECT COUNT() FROM Emp__c WHERE Position__c = :empPosition];
+        //system.debug(countPos);
+        return (countPos > 0);
+    }
+    
+    // Check employee already exists
+    Public static List<Emp__c> empExists(String empName){
+        return  	[SELECT Id, Name 
+                     FROM Emp__c 
+                     WHERE Name = :empName
+                     Limit 1];
+    }
+    
+    // Insert Employee
+    public static void insertEmp(String empName, String empGender, String empPosition, Integer empSalary, String empDep) {
+        List<Emp__c> insertEmpList = new  List<Emp__c>();
+        // 1 Validate Name
+        if (!isEmpNameBlank(empName)) {
+            return;
+        }
+        
+        // 2 Validate Salary
+        if (!isValidSalary(empPosition, empSalary)){
+            return;
+        } 
+        
+        // 3 Validate / Set Position
+        empPosition = checkPosition(empPosition);
+        
+        //  Check if employee already exists
+        List<Emp__c> EmpList = empExists(empName);
+        
+        if (!EmpList.isEmpty()) {
+            System.debug(' Employee already exists: ' + empName);
+            return;
+        }
+        else{
+            Emp__c newEmp = new Emp__c(
+                Name       = empName,
+                Gender__c  = empGender,
+                Position__c = empPosition,
+                Salary__c   = empSalary,
+                Deps__c = empDep
+            );
+            EmpList.add(newEmp);
+            insert EmpList;
+            System.debug(' New Employee created successfully: ' + newEmp);
+            System.debug(' No of Employee Inserted : ' + EmpList.size());
+        }   
+    }
+    
+    // Delete emp if exist
+    public static void deleteEmp(String empName){
+        // 1 Validate Name
+        if (!isEmpNameBlank(empName)){
+            return;
+        } 
+        
+        //  Check if employee already exists
+        List<Emp__c> deleteEmpList = empExists(empName);
+        
+        if(!deleteEmpList.isEmpty()){
+            delete deleteEmpList;
+            System.debug(' Employee record Deleted');
+            System.debug(' No of Records Deleted : ' + deleteEmpList.size());
+        }
+        else{
+            System.debug(' Employee not found');
+        }
+    }
+    
+    
+    // Find Max Salaried Emp based on Position
+    public static Decimal maxSalaryByPosition(String empPosition){
+        Decimal maxSalary = 0;
+        List<Emp__c> maxSalaryList = new List<Emp__c>();
+        // Validate Position
+        if (!isEmpPositionExist(empPosition)) {
+            System.debug(' No such position found ');
+            return maxSalary;
+        }
+        
+        // Find Max Salary
+        List<AggregateResult> maxSalaryResult = [SELECT MAX(Salary__c) maxSal
+                                                 FROM Emp__c
+                                                 WHERE Position__c = :empPosition //check
+                                                ];
+        
+        // Check if salary data exists
+        if (maxSalaryResult.isEmpty() || maxSalaryResult[0].get('maxSal') == null) {
+            System.debug('️ Position exists, but no salary data is available for this position.');
+            //return maxSalaryList;
+        }
+        
+        maxSalary = (Decimal)maxSalaryResult[0].get('maxSal');
+        
+        // Fetch Employees Who Have The Max Salary
+         maxSalaryList = [SELECT Id, Name, Position__c, Salary__c
+                                      FROM Emp__c
+                                      WHERE Position__c = :empPosition AND Salary__c = :maxSalary
+                                     ];
+        
+        if (!maxSalaryList.isEmpty()) {
+            System.debug(' Max Salary Employees: ' + maxSalaryList);
+        } 
+        return maxSalary;
+    }
+    
+    
+    // Find Min Salaried Emp based on Position
+    public static List<Aggregateresult> maxMinSalaryByPosition(){
+        List<Aggregateresult> maxAndMinSalaryList = [Select MAX(Salary__c) maxSal, MIN(Salary__c) minSal,Position__c 
+                                                     From Emp__c 
+                                                     Group by Position__c];
+        if(!maxAndMinSalaryList.isEmpty()){
+            for(Aggregateresult emp: maxAndMinSalaryList){
+                System.debug('----------------------------');
+                System.debug(' Position : ' + (String)emp.get('Position__c')); 
+                System.debug(' Max Salary : ' + (Decimal)emp.get('maxSal'));  
+                System.debug(' Min Salary : ' + (Decimal)emp.get('minSal'));
+            }
+        }
+        else{
+            System.debug(' No Emp Found');
+        }
+        return maxAndMinSalaryList;
+    }
+    
+    // Update Emp Salary
+    Public static Integer updateEmp(String empName, Integer empSalary,String empPosition ) {
+        //  Check Name
+        if (!isEmpNameBlank(empName)){
+            return 0;
+        } 
+        //  Validate Salary
+        if (!isValidSalary(empPosition, empSalary)){
+            return 0;
+        }
+        
+        // Validate Position
+        if (!isEmpPositionExist(empPosition)) {
+            System.debug(' No such position found ');
+            return 0;
+        }
+        
+        //  Validate if employee already exists
+        List<Emp__c> updateEmpList = empExists(empName);  
+        
+        if(!updateEmpList.isEmpty()){
+            Emp__c updateEmpField = updateEmpList[0];
+            updateEmpField.Salary__c = empSalary;
+            update updateEmpList;
+            System.debug(' Employee record Updated ' + updateEmpList);
+            System.debug(' No of Records Updated : ' + updateEmpList.size());
+            Return updateEmpList.size();
+        }
+        else{
+            System.debug(' Employee not found');
+            Return 0;
+        }
+    }
+    
+    // Search Emp
+    Public static List<Emp__c> searchEmp(String empName, String empId){
+        List<Emp__c> existingEmp = new List<Emp__c> ();
+        //  Validate Name
+        if (!isEmpNameBlank(empName)){
+            return existingEmp;
+        } 
+        
+        //  Validate if employee already exists
+        //List<Emp__c> existingEmp = empExists(empName);
+        
+        existingEmp =  [ SELECT Id, Name, EmpID__c
+                         FROM Emp__c 
+                         WHERE Name = :empName and EmpID__c = :empId
+                        ];
+        
+        if (!existingEmp.isEmpty()) {
+            System.debug(' Employee Found: ' + existingEmp);
+            return existingEmp;
+        }
+        else{
+            System.debug(' No Emp Found ');
+            return existingEmp ;
+        }
+        
+    }
+}
+
+
+
+
+
+/*
+List<Emp__c> empList = new List<Emp__c>{
+new Emp__c(Name='EmpName1', Gender__c='Male', Position__c='Admin Rep', Salary__c=5000),
+new Emp__c(Name='EmpName5', Gender__c='Female', Position__c='Sales Rep', Salary__c=3000)
+};
+
+DmlEmpObjDay35 emp6 = new DmlEmpObjDay35('EmpName6', 'Other', 'Sales Rep', 2000);
+DmlEmpObjDay35 emp7 = new DmlEmpObjDay35('EmpName7', 'Female', 'Admin Rep', 3000);
+DmlEmpObjDay35 emp8 = new DmlEmpObjDay35('EmpName8', 'Male', 'Sales Rep', 5000);
+
+
+List<Emp__c> empList = new List<Emp__c>{
+new Emp__c(Name='EmpName1', Gender__c='Male', Position__c='Admin Rep', Salary__c=5000),
+new Emp__c(Name='EmpName6', Gender__c='Other', Position__c='Sales Rep', Salary__c=3000)
+};
+
+// Admin = a08NS000011XVQXYA4
+// Sales = a08NS000011YArtYAG
+// HR = a08NS000011YDJVYA4
+
+DmlEmpDay35.insertEmp('EmpName7', 'Male','Hr', 9000, 'a08NS000011YDJVYA4');
+DmlEmpDay35.deleteEmp('EmpName7');
+DmlEmpDay35.maxSalaryByPosition('Admin Rep');
+DmlEmpDay35.maxSalaryByPosition('Other');
+DmlEmpDay35.maxMinSalaryByPosition();
+DmlEmpDay35.updateEmp('EmpName6', 8000, 'Otherssss');
+DmlEmpDay35.searchEmp('EmpName6','Emp - 07' );
+
+//DmlDepDay35.findEmp(
+*/

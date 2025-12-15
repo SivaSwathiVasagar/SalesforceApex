@@ -1,0 +1,11 @@
+<template>
+    <lightning-card title="Parent Slider" icon-name="custom:custom14">
+        <div class="slds-m-around_medium">
+        <lightning-slider label="Speaker Volume" max="100" min="0" value={val} onchange={handleChange}>
+        </lightning-slider>
+        </div>
+        <div class="slds-m-around_medium slds-box slds-border_brand " >
+            <c-child-slider message={val}></c-child-slider>
+        </div>
+    </lightning-card>
+</template>

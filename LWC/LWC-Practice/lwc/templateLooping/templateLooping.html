@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="Template Looping with Array">
+        <template if:true={isArray}>
+            <template for:each={Contacts} for:item="singleContact">
+                <div key={singleContact}>
+                    <p>{singleContact}</p>
+                </div>
+            </template>
+        </template>
+
+        <div>
+            <lightning-input 
+                type="text" 
+                label="Enter Name to add" 
+                onchange={handleChange}
+                placeholder="Type Name">
+            </lightning-input>
+
+            <!-- ✅ Display what user typed -->
+            <p>You typed: {newName}</p>
+
+            <lightning-button label="Add Name" onclick={handleClick}></lightning-button>
+        </div>
+    </lightning-card>
+</template>
