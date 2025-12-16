@@ -1,0 +1,65 @@
+/* Author 	- svasagar
+* Date 	- 10/06/2025
+* Purpose 	- Handler Class - In Account When No_of_Locations updated, Create same no of Contacts
+*/
+
+public class AccountConTriggerHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+    
+    public AccountConTriggerHandler(){
+        
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Insert{
+                //onBeforeInsert();
+            }
+            When After_Insert{
+                
+            }
+            When After_Update{
+                //onAfterUpdate(triggerNew);
+            }
+            When After_Delete{
+                
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    public void onAfterUpdate(List<Account> accList){
+        system.debug(accList);
+        List<Contact> conList = new List<Contact> ();
+        
+        List<Contact> childCount = [Select ID from Contact Where AccountId in : accList];
+        
+        for(Account record : accList){
+            if(record.NumberofLocations__c != triggerOldMap.get(record.Id).NumberofLocations__c 
+               &&
+               record.NumberofLocations__c > childCount.size() ){
+                   Decimal count = record.NumberofLocations__c - childCount.size(); 
+                   for(integer i = 1; i <= count; i++ ){
+                       Contact obj = new Contact();
+                       obj.LastName = 'Contact ' + i;
+                       obj.AccountId = record.Id;
+                       conList.add(obj);
+                   }
+               }
+        }
+        
+        if(conList.size() > 0){
+            insert conList;
+        }
+        
+    }
+    
+}
