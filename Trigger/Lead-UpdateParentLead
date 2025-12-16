@@ -1,0 +1,56 @@
+trigger UpdateParentLead on Lead (after insert, after update, after delete, after undelete) {
+
+    Set<Id> parentLeadIds = new Set<Id>();
+
+    // Collect Parent IDs from the records being inserted/updated/undeleted (Trigger.new)
+    if (Trigger.isAfter && (Trigger.isInsert || Trigger.isUpdate || Trigger.isUndelete)) {
+        for(Lead ld : Trigger.new){
+            if(ld.Parent_Lead__c != null){
+                parentLeadIds.add(ld.Parent_Lead__c);
+            }
+        }
+    }
+
+    // Collect OLD Parent IDs from records being updated/deleted (Trigger.old)
+    if (Trigger.isAfter && (Trigger.isUpdate || Trigger.isDelete)) {
+        for(Lead oldLd : Trigger.old){
+            // This is CRITICAL: When a child is deleted, we must check its old Parent_Lead__c ID.
+            if(oldLd.Parent_Lead__c != null){
+                parentLeadIds.add(oldLd.Parent_Lead__c);
+            }
+        }
+    }
+
+    if(parentLeadIds.isEmpty()) return;
+
+    // 1. Query all affected parents and the count of their current children
+    List<Lead> leads = [
+        SELECT Id, Name, Status, Description,
+               (SELECT Id FROM Child_Leads__r) // <== Assuming relationship name is 'Child_Leads__r'
+        FROM Lead
+        WHERE Id IN :parentLeadIds
+    ];
+
+    List<Lead> parentUpdates = new List<Lead>();
+    for(Lead parent : leads){
+        // 2. Check if the parent has NO children
+        if(parent.Child_Leads__r.isEmpty()){
+            // Only update if the description is not already set to avoid unnecessary DML
+            if (parent.Description != 'No Child Leads Available') {
+                parent.Description = 'No Child Leads Available';
+                parentUpdates.add(parent);
+            }
+        } else {
+            // 3. IMPORTANT: If it has children, you should clear the 'No Child' status!
+            if (parent.Description == 'No Child Leads Available') {
+                parent.Description = null; // Or set to a different default value
+                parentUpdates.add(parent);
+            }
+        }
+    }
+
+    if(!parentUpdates.isEmpty()){
+        // Update the parent records
+        update parentUpdates;
+    }
+}
