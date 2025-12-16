@@ -1,0 +1,49 @@
+Contact Email Duplicate Validation Trigger
+
+trigger ContactTrigger on Contact (before insert) {
+
+    // 1. Collect all Email addresses from the Contacts being inserted
+    Set<String> newContactEmails = new Set<String>();
+    for (Contact newContact : Trigger.new) {
+        // Ensure the email is not null before adding it
+        if (newContact.Email != null) {
+            // Add the email in a case-insensitive manner (e.g., lowercasing it)
+            // Salesforce Email fields are often case-insensitive when queried.
+            // Using toLowerCase() here ensures better handling if the user input varies in case.
+            newContactEmails.add(newContact.Email.toLowerCase());
+        }
+    }
+
+    // If no emails are present in the new records, exit the trigger
+    if (newContactEmails.isEmpty()) {
+        return;
+    }
+
+    // 2. Query for existing Contacts that match the collected emails
+    // We only need the Id and Email for comparison, and we only query if we have emails to check.
+    List<Contact> existingContacts = [
+        SELECT Id, Email
+        FROM Contact
+        WHERE Email IN :newContactEmails
+    ];
+
+    // 3. Create a map to quickly look up existing emails (case-insensitively)
+    // The map key will be the lowercase email, and the value will be the Contact Id.
+    Map<String, Id> existingEmailMap = new Map<String, Id>();
+    for (Contact existingContact : existingContacts) {
+        // Only map if the email is not null
+        if (existingContact.Email != null) {
+            existingEmailMap.put(existingContact.Email.toLowerCase(), existingContact.Id);
+        }
+    }
+
+    // 4. Loop through the incoming Contacts again and check for duplicates
+    for (Contact newContact : Trigger.new) {
+        // Check if the new Contact has an email and if that email is found in our map of existing emails
+        if (newContact.Email != null && existingEmailMap.containsKey(newContact.Email.toLowerCase())) {
+            // Add a custom error message to the record.
+            // Because this is a 'before insert' trigger, adding the error prevents the record from being saved.
+            newContact.addError('A Contact with the email address ' + newContact.Email + ' already exists. Please check for the existing contact.');
+        }
+    }
+}
