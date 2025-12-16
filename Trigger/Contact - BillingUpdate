@@ -1,0 +1,53 @@
+public class UpdateContactHandler{
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+    
+    public UpdateContactHandler(){
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Update{
+                onAfterUpdate();
+            }
+        }
+    }
+    
+    public void onAfterUpdate(){
+        Set<Id> accIds = new Set<Id> ();
+        
+        for(Account record : triggerNew){
+            if(record.BillingCountry!= triggerOldMap.get(record.Id).BillingCountry){
+                accIds.add(record.Id);
+            }
+        }
+        // Use Soql based on the flow Parent to child 
+        List<Account> accList = [Select Id, BillingCountry,
+                                 (Select ID, MailingCountry from Contacts) from 
+                                 Account Where Id IN: accIds];
+        
+        List<Contact> conList = [Select Id, MailingCountry, AccountId, 
+                                 Account.BillingCountry from Contact Where AccountId IN : accIds];
+        
+        List<Contact> conToUpdate = new List<Contact> ();
+        for(Account record : accList ){
+            for(Contact conRecord : record.Contacts ){
+                conRecord.MailingCountry  = record.BillingCountry ;
+                conToUpdate.add(conRecord);
+            }
+        }
+        try{
+            if(!conToUpdate.isEmpty()){
+                Update conToUpdate;
+            }
+        }
+        catch(Exception e){
+            system.debug('Contact not Updated : ' + e.getMessage());
+           }
+    }
+}
