@@ -1,0 +1,14 @@
+<template>
+    <lightning-card title="DataBase Table Practice">
+        <div>Swathi</div>
+        <lightning-datatable    
+            key-field="Id"
+            data={contactList}
+            columns={columns}
+            onrowselection ={handleRowSelection}
+            onrowaction={handleRowAction}
+            onsave={handleSave}
+            draft-values={draftValues}>
+        </lightning-datatable>     
+    </lightning-card>
+</template>
