@@ -1,0 +1,23 @@
+/* Author   - svasagar
+ * Date     - 10/03/2025
+ * Purpose  - Roll up Summary on Account when Opp stage changes
+ * Purpose  - After Update -> 
+ * Purpose  - Before Update -> 
+ */
+ 
+trigger AccountTrigger on Account (After Update, Before Insert) {
+   /*
+    AccountConTriggerHandler obj = new AccountConTriggerHandler();
+   	obj.doActions(); 
+	*/
+  
+   /* 
+    AccountPhoneTriggerHandler handler = new AccountPhoneTriggerHandler();
+    handler.doActions(); 
+	*/
+
+	UpdateContactHandler handler = new UpdateContactHandler();
+	handler.doActions();
+
+    
+}
