@@ -1,0 +1,32 @@
+<aura:component implements="flexipage:availableForAllPageTypes" access="global">
+    <!-- variable declaration -->
+    <aura:attribute type="string" name="messageInputReceived"></aura:attribute>
+    <aura:attribute type="string" name="messageOutputReceived"></aura:attribute>
+
+    <!-- Input Message -->
+    <lightning:messageChannel
+    type="SimpleMessage__c"
+    scope="APPLICATION"
+    onMessage="{!c.handleInputMessage}"
+    aura:id="SimpleMessage">
+    </lightning:messageChannel>
+
+<lightning:card title="AURA Practice LMS - LWC">
+    <div class="slds-m-around_medium">
+        <h1>Message Recevied From LWC COMP</h1>
+        <p><strong>{!v.messageInputReceived}</strong></p>
+    </div>
+
+    <!-- Output Message Publish -->
+    <div class="slds-m-around_large">
+        <h1>Type to send message back from AURA to LWC</h1>
+        <lightning:input type="text" onchange="{!c.handleOutputMessage}" aura:id ="output"></lightning:input>
+    </div>
+
+    <!-- Button to publish message back to LWC comp -->
+      <div class="slds-m-around_medium">
+        <lightning:button variant="success" label="Publish Msg to LWC" onclick="{!c.handlePublish}"></lightning:button>
+    </div>
+</lightning:card>
+
+</aura:component>

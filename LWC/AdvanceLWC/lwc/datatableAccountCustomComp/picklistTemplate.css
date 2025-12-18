@@ -1,0 +1,8 @@
+:host {
+    display: block;
+}
+
+.force-click {
+    pointer-events: auto !important;
+    z-index: 9999;
+}

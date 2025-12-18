@@ -1,0 +1,18 @@
+<template>
+    <lightning-card title="Custom Account Rating dataTable">
+
+        <template if:true={isReady}>
+             <c-datatable-account-custom-comp
+                key-field="Id"
+                data={accounts}
+                columns={columns}
+                onpicklistchange={handleRatingChange}>
+             </c-datatable-account-custom-comp>
+        </template>
+
+        <template if:false={isReady}>
+            <lightning-spinner alternative-text="Loading"></lightning-spinner>
+        </template>
+
+    </lightning-card>
+</template>
