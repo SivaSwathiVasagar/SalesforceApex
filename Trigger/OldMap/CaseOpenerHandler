@@ -1,0 +1,26 @@
+public class CaseOpenerHandler {
+    List<Case> triggerNew;
+    List<Case> triggerOld;
+    Map<Id, Case> triggerNewMap;
+    Map<Id, Case> triggerOldMap;
+    
+    public CaseOpenerHandler() {
+        triggerNew    = (List<Case>) Trigger.New;
+        triggerOld    = (List<Case>) Trigger.Old;
+        triggerNewMap = (Map<Id, Case>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Case>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Update{
+                onBeforeUpdate();
+            }}
+    }
+    public void onBeforeUpdate(){
+        for(Case record: triggerNew){
+            if(record.Status != 'Closed' && triggerOldMap.get(record.Id).Status == 'Closed'){
+                record.addError('You can not Reopen a Case without Admin Permission');
+            }
+      }}   
+}
