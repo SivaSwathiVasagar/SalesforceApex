@@ -1,0 +1,24 @@
+public class LeadSourceHandler {
+    List<Lead> triggerNew;
+    List<Lead> triggerOld;
+    Map<Id, Lead> triggerNewMap;
+    Map<Id, Lead> triggerOldMap;
+    
+    public LeadSourceHandler() {
+        triggerNew    = (List<Lead>) Trigger.New;
+        triggerOld    = (List<Lead>) Trigger.Old;
+        triggerNewMap = (Map<Id, Lead>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Lead>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Update{
+                onBeforeUpdate();
+            }}
+    }
+    public void onBeforeUpdate(){
+        for(Lead record: triggerNew){
+            if(record.LeadSource != triggerOldMap.get(record.Id).LeadSource && record.LeadSource == Null){
+                record.addError('You can not Clear Lead Source Type without Admin Permission');
+            }}}    
+}
