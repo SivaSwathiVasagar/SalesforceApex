@@ -1,0 +1,40 @@
+public class OppAmountUpdateInAccountHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OppAmountUpdateInAccountHandler() {
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert();
+            }}
+    }
+    public void onAfterInsert(){
+        Map<Id, Decimal> accIds = new   Map<Id, Decimal>(); 
+        List<Account> accountToBeUpdated = new List<Account>(); 
+        for(Opportunity record: triggerNew){
+            if(record.AccountId != Null && record.Amount != Null){
+                accIds.put(record.AccountId, record.Amount);
+            }}
+        if(!accIds.isEmpty()){
+            for(Id record: accIds.keySet()){
+                Account obj = new Account (Id = record, Last_Opp_Amount__c = accIds.get(record));
+                accountToBeUpdated.add(obj);
+            }}
+        try{
+            if(!accountToBeUpdated.isEmpty())    
+            {
+                Update accountToBeUpdated;
+            }}
+        catch(Exception e){
+            system.debug('Error while updating last opp amount : ' + e.getMessage());
+        }}
+}
