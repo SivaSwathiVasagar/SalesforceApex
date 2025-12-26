@@ -1,0 +1,38 @@
+public class UpdateOppCloseDateHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public UpdateOppCloseDateHandler(){
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+    }
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+            }
+            When Before_Update{ 
+                onBeforeUpdate();
+            }
+            When After_Update{  
+            }
+            When After_Delete{
+            }
+            When After_UnDelete{
+                
+            }
+        }
+    }
+    public void onBeforeUpdate(){
+        for(Opportunity record : triggerNew){
+            if(record.CloseDate != triggerOldMap.get(record.id).CloseDate && record.CloseDate < triggerOldMap.get(record.id).CloseDate){
+                system.debug('record.CloseDate : ' + record.CloseDate);
+                system.debug('record.OldDate : ' + triggerOldMap.get(record.id).CloseDate);
+                record.addError('You can not modify Closedate to prior date');
+            }
+        }
+    }    
+}
