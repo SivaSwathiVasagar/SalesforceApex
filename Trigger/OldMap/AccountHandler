@@ -1,0 +1,39 @@
+public without sharing class AccountHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+
+    public AccountHandler() {
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Insert{
+                onBeforeInsert();
+            }
+            When Before_Update{
+                onBeforeUpdate();
+            }
+        }
+    }
+
+    public void onBeforeInsert(){
+        for(Account record : triggerNew){
+            if(record.ParentId == null){
+                record.addError('Please Choose Parent Account');
+            }
+        }
+    }
+    public void onBeforeUpdate(){
+     for(Account record: triggerNew ){
+        if(record.ParentId != triggerOldMap.get(record.Id).ParentId){
+            record.addError('You are not Allowed to change Parent Account');
+        }
+     }
+    }
+}
