@@ -1,0 +1,54 @@
+public without sharing class AccountHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+    
+    public AccountHandler() {
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Update{
+                onAfterUpdate();
+            }}
+    }
+    public void onAfterUpdate() {
+        // Store AccountId → New Rating (only if Rating changed)
+        Map<Id, String> accountRatingMap = new Map<Id, String>();
+        
+        for (Account acc : triggerNew) {
+            Account oldAcc = triggerOldMap.get(acc.Id);
+            
+            if (acc.Rating != oldAcc.Rating) {
+                accountRatingMap.put(acc.Id, acc.Rating);
+            }
+        }
+        
+        // If no rating changed, stop
+        if (accountRatingMap.isEmpty()) {
+            return;
+        }
+        
+        // Fetch all related Opportunities in ONE query
+        List<Opportunity> oppsToUpdate = [SELECT Id, AccountId, Description_AccRating__c 
+                                          FROM Opportunity 
+                                          WHERE AccountId IN :accountRatingMap.keySet()
+                                         ];
+                                               
+        // Update Opportunity description
+        for (Opportunity opp : oppsToUpdate) {
+            String rating = accountRatingMap.get(opp.AccountId);
+            opp.Description_AccRating__c = rating + ' - Changed Rating Account';
+        }
+        
+        // Update records
+        if (!oppsToUpdate.isEmpty()) {
+            update oppsToUpdate;
+        }
+    }   
+}
