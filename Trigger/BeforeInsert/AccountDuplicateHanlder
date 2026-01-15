@@ -1,0 +1,51 @@
+/* Author	- svasagar
+* Date 		- 01/15/2026 -  Pongal 
+* Purpose 	- Handler Class - Throw error when Account gets created with a duplicate name
+*/
+
+public class AccountDuplicateHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+    
+    public AccountDuplicateHanlder(){
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Insert{
+                onBeforeInsert ();
+            }}
+    }
+    
+    public void onBeforeInsert (){
+        set<String> newName = new set<String>();
+        for(Account record: triggerNew){
+            newName.add(record.Name);
+        }
+        
+        List<Account> accList = [Select Name from Account where Name IN : newName];
+        set<String> existingNames = new set<String> ();
+        if(accList.isEmpty()){
+            return;
+        }
+        // Use set to compare field values instead of List, 
+        // List compares whole record, not individual field values
+        for(Account record: accList){
+            existingNames.add(record.Name);
+        }
+        
+        // Loop through TriggerNew to throw an error
+        for(Account record: triggerNew)
+        {
+            if(existingNames.contains(record.Name))
+            {
+                record.addError(' You can not use this Name for Account');
+            }
+        }}
+}
