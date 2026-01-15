@@ -1,0 +1,53 @@
+/* Author	- svasagar
+* Date 		- 01/15/2026 -  Pongal 
+* Purpose 	- Handler Class - throw error on contact when choosen Account has an existing child
+*/
+
+
+public class ContactAccountNoExistChildHandler {
+    List<Contact> triggerNew;
+    List<Contact> triggerOld;
+    Map<Id, Contact> triggerNewMap;
+    Map<Id, Contact> triggerOldMap;
+    
+    public ContactAccountNoExistChildHandler(){
+        triggerNew    = (List<Contact>) Trigger.New;
+        triggerOld    = (List<Contact>) Trigger.Old;
+        triggerNewMap = (Map<Id, Contact>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Contact>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Insert{
+                onBeforeInsert();
+            }
+        }}
+    
+    public void onBeforeInsert(){
+        set<Id> accIds = new Set<Id> ();
+        for(Contact record: triggerNew){
+            if(record.AccountId != null){
+                accIds.add(record.AccountId);
+            }
+        }
+        
+        List<AggregateResult> conCount = [Select count(Id) childCount, AccountId 
+                                          from Contact where AccountId In: accIds group by AccountId ];
+        if(conCount.isEmpty()) return;
+        
+        Map<Id, Integer> accMap = new Map<Id, Integer> ();
+        
+        for(AggregateResult record : conCount ){
+            Integer count = (Integer)record.get('childCount');
+            Id accId = (Id) record.get('AccountId');
+            if(!accMap.containsKey(accId)){
+                accMap.put(accId, count);
+            }  
+        }
+        for(Contact record: triggerNew){
+            if(accMap.containsKey(record.AccountId)){
+                record.addError('Please choose diff Account with no exiting childs');
+            }
+        }}
+}
