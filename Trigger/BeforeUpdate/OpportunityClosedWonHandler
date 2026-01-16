@@ -1,0 +1,34 @@
+/* Author	- svasagar
+* Date 		- 01/16/2026 -  Pongal 
+* Purpose 	- Handler Class - When Opp is updated with ClosedWon update closedate and description
+*/
+
+
+public class OpportunityClosedWonHandler {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OpportunityClosedWonHandler() {
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Update{
+                onBeforeUpdate();
+            }}
+    }
+    
+    public void onBeforeUpdate(){
+        Set<id> oppIds = new Set<Id>();
+        for(Opportunity record: triggerNew){
+            if(record.StageName == 'Closed Won' && record.StageName != triggerOldMap.get(record.id).StageName){
+                   record.CloseDate = system.Today();
+                   record.Description = 'Closed Won Deal';
+               }}}
+    }
