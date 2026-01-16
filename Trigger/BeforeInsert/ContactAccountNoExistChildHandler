@@ -41,9 +41,7 @@ public class ContactAccountNoExistChildHandler {
         for(AggregateResult record : conCount ){
             Integer count = (Integer)record.get('childCount');
             Id accId = (Id) record.get('AccountId');
-            if(!accMap.containsKey(accId)){
-                accMap.put(accId, count);
-            }  
+            accMap.put(accId, count);
         }
         for(Contact record: triggerNew){
             if(accMap.containsKey(record.AccountId)){
