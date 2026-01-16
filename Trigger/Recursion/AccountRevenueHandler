@@ -1,0 +1,55 @@
+/* Author	- svasagar
+* Date 		- 01/08/2026 
+* Purpose 	- Handler Class - When Revenue got updated, create a record in Account_Revenue__c with below details
+*/
+
+public class AccountRevenueHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+     
+    static Boolean flagValue  = false;
+    
+    public AccountRevenueHandler() {
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Update{
+                onAfterUpdate();
+            }}
+    }
+    
+    public void onAfterUpdate(){
+        if(flagValue){
+            return;
+        }
+        flagValue = true;    
+        List<Account_Revenue__c> RevenueList = new List<Account_Revenue__c> ();
+        
+        for(Account record:triggerNew){
+            if(record.AnnualRevenue != Null && record.AnnualRevenue != triggerOldMap.get(record.Id).AnnualRevenue){
+                Account_Revenue__c obj = new Account_Revenue__c (
+                    Account_Name__c = record.Id,
+                    Name = record.Name + ' Revenue',
+                    Changed_Date__c = System.Today(),
+                    New__c = record.AnnualRevenue,
+                    Old__c = triggerOldMap.get(record.Id).AnnualRevenue);
+                RevenueList.add(obj);
+            }
+        }
+        try{
+            if(!RevenueList.isEmpty()){
+                Insert RevenueList;
+            }
+        }
+        catch(Exception e){
+            System.debug('Error on RevenueList ' + e.getMessage());
+        }
+    }
+}
