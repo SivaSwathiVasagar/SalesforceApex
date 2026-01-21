@@ -1,0 +1,116 @@
+/* Author	- svasagar
+* Date 		- 01/1/2026  
+* Purpose 	- Handler Class - Account Contact Roll up
+*/
+
+public class ContactAccRollupHandler {
+    List<Contact> triggerNew;
+    List<Contact> triggerOld;
+    Map<Id, Contact> triggerNewMap;
+    Map<Id, Contact> triggerOldMap;
+    
+    public ContactAccRollupHandler() {
+        triggerNew    = (List<Contact>) Trigger.New;
+        triggerOld    = (List<Contact>) Trigger.Old;
+        triggerNewMap = (Map<Id, Contact>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Contact>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When After_Insert{
+                onAfterInsert();
+            }
+            When After_Update{
+                onAfterUpdate();
+            }
+            When After_Delete{
+                onAfterDelete();
+            }
+            When After_UnDelete{
+                onAfterUnDelete();
+            }
+        }
+    }
+    
+    // Insert
+    public void onAfterInsert(){
+        set<Id> accIds = new set<Id> ();
+        for(Contact record : triggerNew){
+            if(record.AccountId != null){
+                accIds.add(record.AccountId);
+            }
+        }
+        system.debug('onAfterInsert accIds :' + accIds);
+        updateAccount(accIds);    
+    }
+    
+    // Update
+    public void onAfterUpdate(){
+        set<Id> accIds = new set<Id> ();
+        for(Contact record : triggerNew){
+            if(record.AccountId != triggerOldMap.get(record.Id).AccountId && record.AccountId != Null){
+                accIds.add(record.AccountId);
+                accIds.add(triggerOldMap.get(record.Id).AccountId);
+            }
+        }
+        system.debug('onAfterUpdate accIds :' + accIds);
+        updateAccount(accIds);
+    }
+    
+    // Delete	
+    public void onAfterDelete(){
+        set<Id> accIds = new set<Id> ();
+        for(Contact record : triggerOld){
+            if(record.AccountId != Null){
+                accIds.add(record.AccountId);
+            }
+        }
+        system.debug('onAfterUpdate accIds :' + accIds);
+        updateAccount(accIds);
+    }
+    
+    // UnDelete
+    public void onAfterUnDelete(){
+        set<Id> accIds = new set<Id> ();
+        for(Contact record : triggerNew){
+            if(record.AccountId != null){
+                accIds.add(record.AccountId);
+            }
+        }
+        system.debug('onAfterUnDelete accIds :' + accIds);
+        updateAccount(accIds);  
+    }
+    
+    public void updateAccount(set<Id> accIds){
+        List<AggregateResult> contactCount = [Select Count(Id) childCount, AccountId 
+                                              from Contact Where AccountId IN : accIds 
+                                              Group by AccountId];
+        system.debug('contactCount : ' + contactCount.size() );
+        
+        List<Account> updateAccountList = new List<Account> ();
+        
+        if(contactCount.size() > 0){
+            for(AggregateResult record : contactCount){
+                Id  accId = (Id) record.get('AccountId');
+                Integer count = (Integer) record.get('childCount');
+                Account obj = new Account( Id = accId, ContactCount__c = count) ;
+                updateAccountList.add(obj);  
+            } 
+        } else{
+            for(Id accId : accIds){
+                Account obj = new Account( Id = accId, ContactCount__c = 0) ;
+                updateAccountList.add(obj); 
+            }    
+        }
+        try{
+            if(!updateAccountList.isEmpty()){
+                system.debug('updateAccountList : ' + updateAccountList);
+                update updateAccountList;
+            }
+        }
+        catch(Exception e){
+            system.debug('Trigger Error occured : ' + e.getMessage());
+        }
+    }
+}
