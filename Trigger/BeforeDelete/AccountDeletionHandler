@@ -1,0 +1,44 @@
+/* Author	- svasagar
+* Date 		- 01/25/2026 
+* Purpose 	- Handler Class - When an Account is deleted, it should delete its child (Account Revenue)
+*/
+
+public class AccountDeletionHandler {
+    List<Account> triggerNew;
+    List<Account> triggerOld;
+    Map<Id, Account> triggerNewMap;
+    Map<Id, Account> triggerOldMap;
+    
+    public static list<Account_Revenue__c> ChildId = new list<Account_Revenue__c>();
+    
+    public AccountDeletionHandler() {
+        triggerNew    = (List<Account>) Trigger.New;
+        triggerOld    = (List<Account>) Trigger.Old;
+        triggerNewMap = (Map<Id, Account>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Account>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Delete{
+                onBeforeDelete();
+            }
+            When After_Delete{
+                onAfterDelete();
+            }}
+    }
+    public void onBeforeDelete(){   
+        ChildId = [Select Id from Account_Revenue__c where Account_Name__c In : triggerOld];   
+    }
+    public void onAfterDelete(){  
+        try{
+            if(!ChildId.isEmpty()){
+                system.debug(ChildId);
+                delete ChildId;
+            }
+        }
+        catch(Exception e){
+            system.debug('Error from AccountDeletionHandler -> Error in deleting Account : ' + e.getMessage());
+        }  
+    }
+}
