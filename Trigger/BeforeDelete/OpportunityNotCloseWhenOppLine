@@ -1,0 +1,79 @@
+/* Author	- svasagar
+* Date 		- 01/26/2026 
+* Purpose 	- Handler Class - When Opp is updated with ClosedWon, and the user tries 
+*             to delete throws an error when Opp has a child
+*/
+
+//--------------Using List and Set
+
+public class OpportunityNotCloseWhenOppLine {
+    List<Opportunity> triggerNew;
+    List<Opportunity> triggerOld;
+    Map<Id, Opportunity> triggerNewMap;
+    Map<Id, Opportunity> triggerOldMap;
+    
+    public OpportunityNotCloseWhenOppLine() {
+        triggerNew    = (List<Opportunity>) Trigger.New;
+        triggerOld    = (List<Opportunity>) Trigger.Old;
+        triggerNewMap = (Map<Id, Opportunity>) Trigger.NewMap;
+        triggerOldMap = (Map<Id, Opportunity>) Trigger.OldMap;
+    }
+    
+    public void doActions(){
+        Switch on Trigger.OperationType{
+            When Before_Delete{
+                onBeforeDelete();
+            }}
+    }
+    
+    public void onBeforeDelete(){
+        set<Id> oppIds = new set<Id>();
+        for(Opportunity record: triggerOld){
+            if(record.StageName == 'Closed Won')
+                oppIds.add(record.Id);     
+        } 
+        List<Opportunity> oppList = [Select Id, (Select Id from OpportunityLineItems) from Opportunity Where Id In: oppIds];
+        Set<Id> oppListToThrowError = new Set<Id> ();
+        if(!oppList.isEmpty()){
+            for(Opportunity record : oppList){
+                if(record.OpportunityLineItems.size() > 0){
+                    oppListToThrowError.add(record.Id);
+                }
+            }
+        }
+        for(Opportunity record: triggerOld){
+            if(oppListToThrowError.contains(record.Id)){
+               record.addError('Error from OpportunityNotCloseWhenOppLine: You cant close this Opp, because it has Child');
+            }}}
+}
+
+/*
+// -----------------Using List and Map
+
+public void onBeforeDelete(){
+    Set<Id> oppIds = new Set<Id>();
+
+    for(Opportunity opp : triggerOld){
+        if(opp.StageName == 'Closed Won'){
+            oppIds.add(opp.Id);
+        }
+    }
+
+    if(oppIds.isEmpty()) return;
+
+    Map<Id, Integer> oppIdToLineCount = new Map<Id, Integer>();
+
+    for(Opportunity o : [
+        SELECT Id, (SELECT Id FROM OpportunityLineItems)
+        FROM Opportunity
+        WHERE Id IN:oppIds
+    ]) {
+        oppIdToLineCount.put(o.Id, o.OpportunityLineItems.size());
+    }
+
+    // ADD ERROR ON TRIGGER.OLD RECORDS
+    for(Opportunity opp : triggerOld){
+        if(oppIdToLineCount.containsKey(opp.Id) && oppIdToLineCount.get(opp.Id) > 0){
+            opp.addError('You cannot delete this Opportunity because it has Products.');
+        }}}
+*/
